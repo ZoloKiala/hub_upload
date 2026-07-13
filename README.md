@@ -120,6 +120,22 @@ For the whole team with zero install, deploy it as a private **Gradio/Docker
 Space** in IWMIHQ (or any host) and set `HF_TOKEN` as a secret — everyone uses
 it in the browser (Option A above).
 
+### Deploy the web version to Railway
+
+The repo is Railway-ready (`railway.json`). In Railway: **New Project → Deploy
+from GitHub repo → `ZoloKiala/hub_upload`**, then set service **Variables**:
+
+| Variable | Purpose |
+|---|---|
+| `HF_TOKEN` | team write token — **required** for uploads |
+| `ACCESS_CODE` | if set, the whole app sits behind an HTTP Basic prompt (password = this code). **Strongly recommended for any public URL**, because uploads use the shared token and there is no passphrase. |
+| `HF_ORG` | optional; defaults to `IWMIHQ` |
+
+Then **Settings → Networking → Generate Domain**. Nixpacks installs
+`requirements.txt` and runs `uvicorn backend:app --host 0.0.0.0 --port $PORT`.
+Note: the deployment log is on ephemeral disk (resets on redeploy) unless you
+attach a Railway **Volume**.
+
 ## Security
 
 - `HF_TOKEN` lives only in `.env` (gitignored) or a Space secret.

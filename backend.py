@@ -8,6 +8,8 @@ Run standalone:  py -3 backend.py            (serves on 127.0.0.1:8765)
 Electron main.js spawns this and talks to it over HTTP.
 """
 
+import base64
+import hmac
 import json
 import os
 import pathlib
@@ -22,7 +24,7 @@ from datetime import datetime, timezone
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -36,6 +38,10 @@ ORG = os.environ.get("HF_ORG", "IWMIHQ").strip()
 PORT = int(os.environ.get("BACKEND_PORT") or os.environ.get("PORT") or "8765")
 # 127.0.0.1 for local/desktop; set BACKEND_HOST=0.0.0.0 when hosting publicly.
 HOST = os.environ.get("BACKEND_HOST", "127.0.0.1")
+# Optional shared access code for public/hosted deploys (e.g. Railway). When set,
+# the ENTIRE app (UI + API) requires HTTP Basic auth with this as the password.
+# Unset (desktop/local) = no gate, so it never affects local use.
+ACCESS_CODE = os.environ.get("ACCESS_CODE", "").strip()
 
 api = HfApi(token=TOKEN)
 
@@ -50,6 +56,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def _access_gate(request, call_next):
+    """When ACCESS_CODE is set (hosted deploys), require HTTP Basic auth on
+    everything except the health probe. No-op when ACCESS_CODE is empty."""
+    if ACCESS_CODE and request.method != "OPTIONS" and request.url.path != "/api/health":
+        ok = False
+        auth = request.headers.get("authorization", "")
+        if auth.startswith("Basic "):
+            try:
+                pw = base64.b64decode(auth[6:]).decode("utf-8", "ignore").partition(":")[2]
+                ok = hmac.compare_digest(pw, ACCESS_CODE)
+            except Exception:
+                ok = False
+        if not ok:
+            return Response(status_code=401,
+                            headers={"WWW-Authenticate": 'Basic realm="IWMI Hub Uploader"'})
+    return await call_next(request)
 
 # job_id -> progress dict
 JOBS: dict[str, dict] = {}
