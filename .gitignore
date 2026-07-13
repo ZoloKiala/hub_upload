@@ -1,0 +1,19 @@
+# secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+.gradio/
+
+# node
+node_modules/
+
+# build artifacts
+dist-app/
+dist-backend/
+build-backend/
+electron/dist/
+
+# rust / tauri build output
+src-tauri/target/
