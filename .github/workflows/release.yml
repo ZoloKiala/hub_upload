@@ -1,0 +1,66 @@
+name: Build & Release (Windows)
+
+# Build the backend + installer and publish a GitHub Release whenever a
+# version tag (e.g. v0.1.1) is pushed.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install backend dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller "fastapi>=0.115" "uvicorn>=0.30" \
+            "huggingface_hub>=0.26" "python-dotenv>=1.0" "python-multipart>=0.0.9"
+
+      - name: Build backend (PyInstaller -> dist-backend/hub-backend.exe)
+        shell: bash
+        run: |
+          python -m PyInstaller --noconfirm --onefile --name hub-backend \
+            --distpath dist-backend --workpath build-backend \
+            --collect-all uvicorn --collect-all fastapi --collect-all starlette \
+            --collect-all anyio --collect-all huggingface_hub --collect-all pydantic \
+            --collect-all pydantic_core --collect-all multipart --collect-all dotenv \
+            backend.py
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: electron/package-lock.json
+
+      - name: Build installer (electron-builder)
+        shell: bash
+        working-directory: electron
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npm ci
+          npm run dist
+
+      - name: Publish GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist-app/*.exe \
+            --title "IWMI Hub Uploader $GITHUB_REF_NAME" \
+            --notes "Automated Windows build from tag $GITHUB_REF_NAME. Unsigned installer (SmartScreen: More info -> Run anyway). Configure HF_TOKEN in the app's resources\\.env; no Python or Node needed on the target." \
+          || gh release upload "$GITHUB_REF_NAME" dist-app/*.exe --clobber

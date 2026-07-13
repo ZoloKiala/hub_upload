@@ -17,6 +17,7 @@
   "build": {
     "appId": "org.iwmi.hubuploader",
     "productName": "IWMI Hub Uploader",
+    "artifactName": "IWMI-Hub-Uploader-Setup-${version}.${ext}",
     "directories": { "output": "../dist-app" },
     "files": ["main.js", "preload.js", "renderer/**/*"],
     "extraResources": [
