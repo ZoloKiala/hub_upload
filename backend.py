@@ -32,7 +32,10 @@ load_dotenv()
 
 TOKEN = os.environ.get("HF_TOKEN", "").strip()
 ORG = os.environ.get("HF_ORG", "IWMIHQ").strip()
-PORT = int(os.environ.get("BACKEND_PORT", "8765"))
+# BACKEND_PORT (desktop) wins; PORT is what hosts like Railway inject; else default.
+PORT = int(os.environ.get("BACKEND_PORT") or os.environ.get("PORT") or "8765")
+# 127.0.0.1 for local/desktop; set BACKEND_HOST=0.0.0.0 when hosting publicly.
+HOST = os.environ.get("BACKEND_HOST", "127.0.0.1")
 
 api = HfApi(token=TOKEN)
 
@@ -418,4 +421,4 @@ if RENDERER_DIR.exists():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=PORT, log_level="warning")
+    uvicorn.run(app, host=HOST, port=PORT, log_level="warning")
