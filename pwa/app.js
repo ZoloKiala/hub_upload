@@ -715,7 +715,9 @@ function wire() {
   on($('help-btn'), 'click', () => openModal('modal-help'));
   on($('settings-btn'), 'click', () => openModal('modal-settings'));
   on($('github-btn'), 'click', () => { show($('github-error'), false); openModal('modal-github'); });
-  on($('install-btn'), 'click', () => {
+  // Two ways in: the bar, and Settings — which is the only one on a phone, where
+  // the bar has no room for it.
+  const install = () => {
     if (state.installEvent) {
       state.installEvent.prompt();
       state.installEvent.userChoice.then(() => {
@@ -723,7 +725,9 @@ function wire() {
         $('install-btn').classList.remove('is-ready');
       });
     } else openModal('modal-install');
-  });
+  };
+  on($('install-btn'), 'click', install);
+  on($('install-btn-2'), 'click', install);
   document.querySelectorAll('[data-close]').forEach((b) => on(b, 'click', closeModals));
   document.querySelectorAll('.scrim').forEach((s) => on(s, 'click', (e) => {
     // Clicking the backdrop dismisses, except mid-upload where it would look

@@ -85,16 +85,20 @@
       <div class="brand-where">IWMIHQ · Hugging Face Hub</div>
 
       <div class="tabs" role="tablist" aria-label="Sections">
-        <button role="tab" data-tab="upload" aria-selected="true">
-          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-cloud-upload"/></svg>Upload</button>
-        <button role="tab" data-tab="history" aria-selected="false">
-          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-clock-history"/></svg>History</button>
-        <button role="tab" data-tab="projects" aria-selected="false">
-          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-grid-3x3-gap-fill"/></svg>Projects</button>
+        <button role="tab" data-tab="upload" aria-selected="true" title="Upload" aria-label="Upload">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-cloud-upload"/></svg>
+          <span class="label">Upload</span></button>
+        <button role="tab" data-tab="history" aria-selected="false" title="History" aria-label="History">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-clock-history"/></svg>
+          <span class="label">History</span></button>
+        <button role="tab" data-tab="projects" aria-selected="false" title="Projects" aria-label="Projects">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-grid-3x3-gap-fill"/></svg>
+          <span class="label">Projects</span></button>
       </div>
 
-      <button class="pill-btn" id="install-btn">
-        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-display"/></svg>Install app</button>
+      <button class="pill-btn" id="install-btn" title="Install app" aria-label="Install app">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-display"/></svg>
+        <span class="label">Install app</span></button>
       <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Appearance">
         <button data-look="light" title="Light" aria-label="Light" aria-pressed="true">
           <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-brightness-high-fill"/></svg>
@@ -325,12 +329,105 @@
       <h5 id="help-title">How to use this app</h5>
       <button class="modal-x" data-close aria-label="Close">&times;</button>
     </div>
-    <div class="modal-body prose">
-      <p>1. Choose a repository type — Model, Dataset or Space.</p>
-      <p>2. Create a new repository or update an existing one in IWMIHQ.</p>
-      <p>3. Drag files or a folder, browse, or import from GitHub. Folder structure is kept.</p>
-      <p>4. Review the pre-flight checks and the auto-generated README.</p>
-      <p>5. Select “Upload to Hub”. Large files upload via git LFS automatically.</p>
+    <div class="modal-body help">
+
+      <p class="lede">This app puts files into a repository on the Hugging Face Hub,
+        under the <strong>IWMIHQ</strong> organization, in one commit. It never
+        deletes anything.</p>
+
+      <div class="eyebrow">Before you start</div>
+      <ul>
+        <li>You need your own Hugging Face account, added to <strong>IWMIHQ</strong>
+          with write access — ask an admin.</li>
+        <li>And a <strong>write</strong> token from that account
+          (<a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener">huggingface.co/settings/tokens</a>).
+          A read-only one is refused when you connect rather than at the end of an
+          upload.</li>
+        <li>The token stays in this browser. Nothing is sent anywhere except
+          huggingface.co, and <em>Sign out</em> removes it.</li>
+      </ul>
+
+      <div class="eyebrow">The five steps</div>
+      <ol class="steps">
+        <li><strong>Choose a type.</strong> A <em>Model</em> holds weights, a
+          <em>Dataset</em> holds data, a <em>Space</em> holds an app — and a Space also
+          asks which SDK runs it (Gradio, Streamlit, Docker or static).</li>
+        <li><strong>Create new, or update existing.</strong> Creating asks for a name
+          under <code>IWMIHQ/</code>, whether it is public or private, and a licence.
+          Updating lists what is already there — including private repositories your
+          account can see — and adds your files to one of them.</li>
+        <li><strong>Add files.</strong> Drag them in, browse for files or a whole
+          folder, or import from a public GitHub repository. Folder structure is kept,
+          so <code>data/2024/eta.tif</code> arrives at that path.</li>
+        <li><strong>Read the checks and the README.</strong> Both update as you type.
+          A warning is not a blocker: it is something to look at before you commit.</li>
+        <li><strong>Upload to Hub.</strong> One commit, with a progress bar and a log.
+          Keep the window open until it finishes.</li>
+      </ol>
+
+      <div class="eyebrow">What it does with your files</div>
+      <ul>
+        <li><strong>Large files go via git LFS automatically</strong> — anything over
+          10 MB is marked <span class="tag-lfs">LFS</span> in the staged list. You do
+          not have to configure anything, but those uploads take longer.</li>
+        <li><strong>A README.md is generated and committed with them.</strong> It
+          carries the licence, your tags and the Space SDK as front matter, then the
+          description, your name, and the list of files. If the repository already has
+          a README, this replaces it — copy anything worth keeping into the
+          description first.</li>
+        <li><strong>Nothing else in the repository is touched.</strong> Updating adds
+          or replaces the paths you staged; other files stay as they are.</li>
+        <li><strong>The commit message</strong> is what you typed, or "Add files via
+          Hub uploader" with your name. It is what people see in the repository's
+          history, so a sentence beats a filename.</li>
+      </ul>
+
+      <div class="eyebrow">Importing from GitHub</div>
+      <p>Give it <code>owner/repo</code> or a full GitHub URL. It stages the first
+        <strong>25 files under 5 MB</strong> from the default branch, keeping their
+        paths — enough for code and configuration, not for data. Public repositories
+        only; it does not ask GitHub for a token.</p>
+
+      <div class="eyebrow">After the upload</div>
+      <ul>
+        <li><strong>History</strong> lists what you uploaded <em>from this device</em>
+          — the last 25, kept in this browser. It is not an organization-wide log.</li>
+        <li><strong>Projects</strong> lists everything IWMIHQ has published, plus
+          private repositories your account can see. The search box filters by name,
+          by kind ("space"), or by visibility ("private"), and every word has to
+          match.</li>
+        <li>The Hub takes a few minutes to build a Space and to render a dataset
+          preview. A repository that looks empty immediately after an upload is
+          usually still processing.</li>
+      </ul>
+
+      <div class="eyebrow">When something goes wrong</div>
+      <ul>
+        <li><strong>"That token is read-only."</strong> Make a new token with the
+          write role; you cannot upgrade an existing one.</li>
+        <li><strong>401 or 403 on upload.</strong> The token was revoked, or your
+          account is not a member of IWMIHQ with write access.</li>
+        <li><strong>The repository already exists.</strong> Creating one that is
+          already there is not an error — it uploads into the existing repository and
+          says so in the log.</li>
+        <li><strong>The upload failed halfway.</strong> A commit either lands or it
+          does not; a failed one leaves the repository as it was. Fix what the message
+          says and press upload again.</li>
+        <li><strong>It is slow.</strong> Large files and many files both cost time, and
+          the whole upload runs from this browser — closing the window stops it. The
+          app warns before you leave with an upload running.</li>
+      </ul>
+
+      <div class="eyebrow">The app itself</div>
+      <ul>
+        <li><strong>Install it</strong> and it opens in its own window: the install
+          icon in the address bar on Chrome or Edge, Share → Add to Dock on Safari.</li>
+        <li><strong>It works offline</strong> up to the point of uploading — staging
+          files, the checks and the README all happen here. Only the upload needs the
+          network.</li>
+        <li><strong>Light or dark</strong> is the sun/moon toggle in the bar; until you
+          choose, it follows your system.</li>
+      </ul>
     </div>
   </div>
 </div>
@@ -358,6 +455,8 @@
       <input class="fld" id="f-name-2" type="text" style="margin-bottom:8px">
       <p class="hint tight">Recorded in every commit message.</p>
       <button class="btn btn-primary" id="save-settings" style="margin-bottom:18px">Save</button>
+
+      <button class="btn btn-ghost" id="install-btn-2" style="margin-bottom:18px">Install this app</button>
 
       <hr class="rule" style="margin-top:0">
       <button class="btn btn-danger" id="signout-btn">Sign out</button>

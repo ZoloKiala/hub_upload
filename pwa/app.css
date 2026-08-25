@@ -285,12 +285,15 @@ select.fld { padding: 0.45rem 0.5rem; }
   display: flex;
   align-items: center;
   gap: 1.1rem;
-  flex-wrap: wrap;
+  /* Deliberately not wrapping: a bar that wraps becomes a tall rounded block with
+     orphaned icons under it. The media queries below drop content instead. */
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 /* IWMI's own wordmark, white on navy, exactly as Explorer's masthead carries it --
    the white variant is the one IWMI publish for dark grounds, so it needs the navy
    chip behind it rather than sitting invisibly on a white bar. */
-.brand { display: flex; align-items: center; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: none; }
 .brand-logo {
   background: var(--navy);
   border-radius: 7px;
@@ -307,7 +310,7 @@ select.fld { padding: 0.45rem 0.5rem; }
   padding-left: 10px;
   border-left: 1px solid var(--line);
 }
-.brand-where { font-size: 0.75rem; color: var(--ink-2); }
+.brand-where { font-size: 0.75rem; color: var(--ink-2); white-space: nowrap; }
 
 .tabs {
   margin-left: auto;
@@ -720,7 +723,7 @@ select.fld { padding: 0.45rem 0.5rem; }
 }
 .modal.sm { width: min(420px, 100%); }
 .modal.md { width: min(440px, 100%); }
-.modal.lg { width: min(560px, 100%); }
+.modal.lg { width: min(620px, 100%); }
 .modal-head {
   display: flex;
   align-items: center;
@@ -743,6 +746,49 @@ select.fld { padding: 0.45rem 0.5rem; }
 .modal-body.prose p { margin: 0 0 10px; }
 .modal-body.prose p:last-child { margin: 0; }
 .modal-body.center { text-align: center; }
+
+/* The help panel: long enough to need structure, so sections get an eyebrow, the
+   flow gets real numbers, and everything else is a short list. */
+.help { line-height: 1.65; }
+.help .lede { font-size: 0.88rem; margin-bottom: 18px; }
+.help .eyebrow { margin: 20px 0 8px; }
+.help ul { margin: 0; padding-left: 18px; }
+.help ul li + li { margin-top: 8px; }
+.help p { margin: 0; font-size: 0.85rem; }
+.help code {
+  font-family: var(--mono);
+  font-size: 0.8em;
+  background: var(--surface-wash);
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.help .tag-lfs { font-size: 0.6rem; vertical-align: 1px; }
+.help ol.steps { margin: 0; padding-left: 0; list-style: none; counter-reset: step; }
+.help ol.steps > li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 34px;
+  font-size: 0.85rem;
+}
+.help ol.steps > li + li { margin-top: 10px; }
+.help ol.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-pill);
+  display: grid;
+  place-items: center;
+  background: var(--blue-soft);
+  border: 1px solid var(--blue-soft-border);
+  color: var(--navy);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 
 .kv { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 6px; }
 .kv span:last-child { color: var(--ink-2); }
@@ -953,6 +999,97 @@ select.fld { padding: 0.45rem 0.5rem; }
   box-shadow: var(--lift-btn);
 }
 .theme-toggle button:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+
+/* ── widths ─────────────────────────────────────────────────────────────────
+ * Each step removes the thing that has stopped earning its space, so the bar
+ * stays one row from a 27-inch display down to a phone. Everything dropped is
+ * either said elsewhere or still reachable — the tab buttons keep their labels
+ * as accessible names, so a screen reader is unaffected by any of this.
+ */
+
+/* The org line: the wordmark beside it already says IWMI, and the connect card
+   said IWMIHQ. */
+@media (max-width: 1080px) {
+  .brand-where { display: none; }
+  .topbar-inner { gap: 0.8rem; }
+}
+
+/* The app's name in the serif. The wordmark stays. */
+@media (max-width: 880px) {
+  .brand-name { display: none; }
+  .brand { gap: 0; }
+  .topbar { padding: 0.6rem 0.75rem 0.25rem; }
+  .topbar-inner { gap: 0.6rem; padding: 0.35rem 0.6rem; }
+  .tabs { margin-left: auto; }
+  .view { padding: 1rem 1rem 1.25rem; }
+  .upload-grid { padding: 0.5rem 0.75rem 6rem; gap: 1rem; }
+  .footbar { padding: 0.7rem 1rem; }
+}
+
+/* Tab labels and the install label: the icons carry them from here down. */
+@media (max-width: 700px) {
+  .tabs button span, .tabs button { gap: 0; }
+  .tabs button .label, .pill-btn .label { display: none; }
+  .tabs button { padding: 0.35rem 0.6rem; }
+  .pill-btn { padding: 0.35rem 0.55rem; }
+  .card { padding: 1rem; }
+  .card.snug { padding: 0.9rem 1rem; }
+  .drop { padding: 1.6rem 1rem; }
+  .modal-body, .modal-head { padding-left: 1rem; padding-right: 1rem; }
+  /* The footbar's hint gives way to the button rather than pushing it off. */
+  .footbar span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .footbar .btn { flex: none; }
+}
+
+/* Phones. The bar is wordmark, tabs, toggle, help, settings — and Install moves
+   into the Settings panel, where the same explanation already lives. */
+@media (max-width: 560px) {
+  .topbar { padding: 0.5rem 0.5rem 0.25rem; }
+  .topbar-inner { gap: 0.4rem; padding: 0.3rem 0.45rem; }
+  #install-btn { display: none; }
+  .brand-logo { padding: 4px 7px; }
+  .brand-logo img { height: 15px; }
+  .theme-toggle button { width: 24px; height: 24px; }
+  .icon-btn { padding: 0.15rem 0.2rem; }
+  .searchbar { gap: 0.5rem; }
+  .search { max-width: none; }
+  .view-title { font-size: 1.2rem; }
+  .row-card { flex-wrap: wrap; gap: 8px 10px; }
+  .row-card .row-when { margin-left: auto; }
+  .grid-cards { grid-template-columns: 1fr; }
+  .hero { padding: 16px 10px; }
+  .hero-head { padding: 16px 18px; }
+  .hero-head img { height: 22px; }
+  .hero-head h1 { font-size: 1.02rem; }
+  .hero-body { padding: 1.25rem 1.25rem 1.4rem; }
+  .result-actions { flex-direction: column; }
+  .result-actions .btn, .result-actions a { width: 100%; }
+}
+
+/* Small phones: the tab rail loses its own padding so three icons plus the
+   toggle still fit beside the wordmark. */
+@media (max-width: 380px) {
+  .topbar-inner { gap: 0.3rem; }
+  .tabs { padding: 0.1rem 0.15rem; gap: 0.15rem; }
+  .tabs button { padding: 0.3rem 0.45rem; }
+  #help-btn { display: none; }
+  .view { padding: 0.85rem 0.75rem 1rem; }
+  .card, .card.snug { padding: 0.85rem 0.9rem; }
+}
+
+/* Short windows — a laptop with a browser and a video call in it. The sticky bar
+   and the upload bar together eat a 600px-high viewport, so the panels give up
+   their fixed maximums and the page scrolls as one. */
+@media (max-height: 620px) {
+  .files, .readme, .log { max-height: 140px; }
+  .modal { max-height: 92vh; }
+  .hero { padding: 12px 10px; align-items: flex-start; }
+}
 
 /* Installed as an app, the title bar is the window's own; there is no browser
    chrome to sit under, so the sticky bar needs no extra room. */

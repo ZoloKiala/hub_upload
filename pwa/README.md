@@ -53,6 +53,16 @@ The choice is applied by a small inline script in `<head>` before first paint, s
 dark app never flashes light on launch, and `<meta name="theme-color">` moves with
 it so the browser's own chrome matches.
 
+## At different sizes
+
+The top bar never wraps. Each breakpoint drops whatever has stopped earning its
+space, in order: the `IWMIHQ · Hugging Face Hub` line (1080px), the app's name
+(880px), the tab and install labels (700px), the install pill itself (560px, where
+Settings offers it instead), and Help (380px). Every button keeps its label as an
+accessible name, so nothing is lost to a screen reader. Below 900px the two-column
+upload view stacks; below 620px *tall* the file, README and log panels give up their
+fixed heights so a short window scrolls as one page.
+
 ## Run it
 
 Any static server; a service worker will not install over `file://`.
