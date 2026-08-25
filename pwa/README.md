@@ -85,7 +85,7 @@ and an upload needs the network regardless.
   prototype for the design tool, needing React, Babel and a runtime from a CDN. This
   folder is the same design as a real app; the prototype is the reference, not a
   dependency.
-- Icons come from Bootstrap Icons (MIT) as a 23-glyph sprite. Add one to the list in
+- Icons come from Bootstrap Icons (MIT) as a 24-glyph sprite. Add one to the list in
   `build_icons.py` and re-run it.
 
 ## What this replaces
