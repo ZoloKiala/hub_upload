@@ -29,7 +29,7 @@ ICONS = [
     "cloud-upload", "dash-lg", "database-fill", "display", "droplet-half",
     "exclamation-triangle-fill", "eye", "file-earmark", "gear-fill", "github",
     "grid-3x3-gap-fill", "lock-fill", "question-circle", "rocket-takeoff-fill",
-    "square", "upload", "x", "x-circle-fill", "x-lg",
+    "search", "square", "upload", "x", "x-circle-fill", "x-lg",
 ]
 
 HEAD = """<svg xmlns="http://www.w3.org/2000/svg" style="display:none">

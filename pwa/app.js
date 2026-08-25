@@ -38,6 +38,7 @@ const state = {
   tags: [],
   history: [],
   projects: [],
+  search: '',
   logLines: [],
   installEvent: null,
   lastRepo: null,
@@ -427,20 +428,47 @@ async function loadProjects() {
     all.sort((a, b) => new Date(b.when || 0) - new Date(a.when || 0));
     state.projects = all;
     show($('projects-loading'), false);
-    show($('projects-empty'), all.length === 0);
-    $('projects-list').innerHTML = all.map((p) =>
-      '<a class="proj" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
-      '<div class="proj-head"><span class="badge ' + p.type + '">' + icon(p.icon) + p.label + '</span>' +
-      (p.private ? '<span class="badge private" title="Private">' + icon('lock-fill') + 'Private</span>' : '') +
-      icon('box-arrow-up-right') + '</div>' +
-      '<div class="proj-id" title="' + esc(p.id) + '">' + esc(p.id) + '</div>' +
-      '<div class="proj-when">Updated ' + (p.when ? ago(p.when) : '—') + '</div></a>').join('');
+    renderProjects();
   } catch (e) {
     show($('projects-loading'), false);
     $('projects-error').textContent = 'Could not load IWMIHQ projects. ' +
       ((e && e.message) ? e.message : '');
     show($('projects-error'), true);
   }
+}
+
+/** Filtering happens here rather than at the Hub: the whole list is already in
+ *  memory, so a keystroke costs nothing, works offline, and does not rate-limit.
+ *  A query matches the repository path or its kind, so "space" and "water" both
+ *  narrow usefully. */
+function matches(project, query) {
+  if (!query) return true;
+  const haystack = (project.id + ' ' + project.label +
+                    (project.private ? ' private' : ' public')).toLowerCase();
+  // Every word must appear: "water kenya" should find one repository, not fifteen.
+  return query.split(/\s+/).filter(Boolean).every((word) => haystack.indexOf(word) !== -1);
+}
+
+function renderProjects() {
+  const query = state.search.trim().toLowerCase();
+  const all = state.projects;
+  const shown = all.filter((p) => matches(p, query));
+
+  show($('search-clear'), !!state.search);
+  $('projects-count').textContent = !all.length ? ''
+    : query ? shown.length + ' of ' + all.length + ' shown'
+    : all.length + ' project' + (all.length === 1 ? '' : 's');
+
+  show($('projects-empty'), all.length === 0);
+  show($('projects-nomatch'), all.length > 0 && shown.length === 0);
+
+  $('projects-list').innerHTML = shown.map((p) =>
+    '<a class="proj" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
+    '<div class="proj-head"><span class="badge ' + p.type + '">' + icon(p.icon) + p.label + '</span>' +
+    (p.private ? '<span class="badge private" title="Private">' + icon('lock-fill') + 'Private</span>' : '') +
+    icon('box-arrow-up-right') + '</div>' +
+    '<div class="proj-id" title="' + esc(p.id) + '">' + esc(p.id) + '</div>' +
+    '<div class="proj-when">Updated ' + (p.when ? ago(p.when) : '—') + '</div></a>').join('');
 }
 
 /* ── upload ─────────────────────────────────────────────────────────────── */
@@ -552,6 +580,13 @@ function uploadAnother() {
   $('f-desc').value = '';
   closeModals();
   refresh();
+}
+
+function clearSearch() {
+  state.search = '';
+  $('f-search').value = '';
+  renderProjects();
+  $('f-search').focus();
 }
 
 /* ── github import ──────────────────────────────────────────────────────── */
@@ -688,6 +723,15 @@ function wire() {
   ['f-repo', 'f-desc', 'f-license', 'f-existing', 'f-sdk', 'f-commit']
     .forEach((id) => on($(id), 'input', refresh));
   on($('f-existing'), 'change', refresh);
+
+  on($('f-search'), 'input', (e) => {
+    state.search = e.target.value;
+    renderProjects();
+  });
+  on($('f-search'), 'keydown', (e) => {
+    if (e.key === 'Escape') { e.stopPropagation(); clearSearch(); }
+  });
+  on($('search-clear'), 'click', clearSearch);
 
   on($('upload-btn'), 'click', upload);
   on($('again-btn'), 'click', uploadAnother);

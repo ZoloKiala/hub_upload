@@ -241,9 +241,22 @@
     <h2 class="view-title">All IWMIHQ projects</h2>
     <p class="view-sub">Everything IWMIHQ has published on the Hugging Face Hub — public
       repositories, plus private ones your account can see as an organization member.</p>
+    <div class="searchbar">
+      <div class="search">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-search"/></svg>
+        <input id="f-search" type="search" autocomplete="off" spellcheck="false"
+               placeholder="Search IWMIHQ projects" aria-label="Search projects">
+        <button class="search-x" id="search-clear" aria-label="Clear search" hidden>
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-x-lg"/></svg>
+        </button>
+      </div>
+      <span class="search-count" id="projects-count"></span>
+    </div>
+
     <div class="empty" id="projects-loading">Loading…</div>
     <p class="err" id="projects-error" hidden></p>
     <div class="empty" id="projects-empty" hidden>No projects found for IWMIHQ yet.</div>
+    <div class="empty" id="projects-nomatch" hidden>Nothing matches that search.</div>
     <div class="grid-cards" id="projects-list"></div>
   </div>
 </div>
