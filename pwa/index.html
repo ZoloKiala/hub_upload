@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hub uploader — IWMIHQ</title>
+<meta name="description" content="Upload models, datasets and Spaces to the IWMIHQ organization on the Hugging Face Hub.">
+<meta name="theme-color" content="#28537D">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<!-- ══ connect ═══════════════════════════════════════════════════════════════
+     The design's connect card. One change from the prototype, and it is the
+     reason this app needs no server: the token is the person's own, pasted once
+     and kept in this browser, instead of one org-wide write token shipped to
+     every client. Nothing to leak, and the Hub records who actually committed.
+-->
+<section class="hero" id="screen-connect">
+  <div class="hero-card">
+    <div class="hero-head">
+      <div class="hero-mark"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-droplet-half"/></svg></div>
+      <h1>Hub uploader</h1>
+      <div class="hero-where">IWMI · Hugging Face Hub</div>
+    </div>
+
+    <hr class="rule" style="margin-top:0">
+    <p class="lede">Connect your Hugging Face account to start.</p>
+
+    <label class="lbl" for="f-token">Your access token</label>
+    <input class="fld mono fld-gap" id="f-token" type="password" autocomplete="off"
+           spellcheck="false" placeholder="hf_…">
+    <p class="hint">A <strong>write</strong> token from your own Hugging Face account. It stays in
+      this browser and is never sent anywhere except huggingface.co.</p>
+    <p class="hint">No account yet? <a href="https://huggingface.co/join" target="_blank" rel="noopener">Create one ↗</a>
+      then <a href="https://huggingface.co/settings/tokens/new?tokenType=write" target="_blank" rel="noopener">make a write token ↗</a>.
+      Ask an admin to add you to IWMIHQ.</p>
+
+    <hr class="rule">
+
+    <label class="lbl" for="f-name">Your name</label>
+    <input class="fld fld-gap" id="f-name" type="text" placeholder="Jane Mokoena">
+    <p class="hint">Recorded in every commit message. Filled in from your account when you connect.</p>
+
+    <label class="lbl" for="f-org">Organization</label>
+    <input class="fld fld-gap" id="f-org" type="text" readonly
+           value="IWMIHQ — International Water Management Institute">
+
+    <p class="err" id="connect-error" hidden></p>
+    <button class="btn btn-primary btn-block" id="connect-btn">Continue</button>
+    <div class="copyright">© 2026 International Water Management Institute (IWMI)</div>
+  </div>
+</section>
+
+<!-- ══ the app ═══════════════════════════════════════════════════════════════ -->
+<div class="app" id="screen-app" hidden>
+
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-dot"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-droplet-half"/></svg></span>
+        <span class="brand-name">Hub uploader</span>
+      </div>
+      <div class="brand-where">IWMIHQ · Hugging Face Hub</div>
+
+      <div class="tabs" role="tablist" aria-label="Sections">
+        <button role="tab" data-tab="upload" aria-selected="true">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-cloud-upload"/></svg>Upload</button>
+        <button role="tab" data-tab="history" aria-selected="false">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-clock-history"/></svg>History</button>
+        <button role="tab" data-tab="projects" aria-selected="false">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-grid-3x3-gap-fill"/></svg>Projects</button>
+      </div>
+
+      <button class="pill-btn" id="install-btn">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-display"/></svg>Install app</button>
+      <button class="icon-btn" id="help-btn" title="Help" aria-label="Help">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-question-circle"/></svg></button>
+      <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Settings">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-gear-fill"/></svg></button>
+    </div>
+  </div>
+
+  <!-- ── upload ─────────────────────────────────────────────────────────── -->
+  <div id="tab-upload">
+    <div class="upload-grid">
+
+      <div class="col">
+        <div class="card">
+          <h3 class="card-title">Destination</h3>
+
+          <div class="lbl">Repository type</div>
+          <div class="seg" id="repo-type">
+            <button data-type="model" aria-pressed="true">
+              <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-box-seam"/></svg>Model</button>
+            <button data-type="dataset" aria-pressed="false">
+              <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-database-fill"/></svg>Dataset</button>
+            <button data-type="space" aria-pressed="false">
+              <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-rocket-takeoff-fill"/></svg>Space</button>
+          </div>
+
+          <div id="sdk-row" hidden>
+            <label class="lbl" for="f-sdk">Space SDK</label>
+            <select class="fld fld-gap" id="f-sdk">
+              <option value="gradio">Gradio</option>
+              <option value="streamlit">Streamlit</option>
+              <option value="docker">Docker</option>
+              <option value="static">Static</option>
+            </select>
+          </div>
+
+          <div class="lbl">Repository</div>
+          <div class="seg row" id="repo-mode">
+            <button data-mode="create" aria-pressed="true">Create new</button>
+            <button data-mode="update" aria-pressed="false">Update existing</button>
+          </div>
+
+          <div id="create-fields">
+            <label class="lbl" for="f-repo">Repository name</label>
+            <div class="prefixed fld-gap">
+              <span>IWMIHQ/</span>
+              <input id="f-repo" type="text" placeholder="my-repository" spellcheck="false">
+            </div>
+
+            <div class="lbl">Visibility</div>
+            <div class="seg row" id="visibility">
+              <button data-vis="public" aria-pressed="true">
+                <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-eye"/></svg>Public</button>
+              <button data-vis="private" aria-pressed="false">
+                <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-lock-fill"/></svg>Private</button>
+            </div>
+
+            <label class="lbl" for="f-license">License</label>
+            <select class="fld fld-gap" id="f-license">
+              <option value="cc-by-4.0">CC BY 4.0</option>
+              <option value="cc-by-sa-4.0">CC BY-SA 4.0</option>
+              <option value="cc-by-nc-4.0">CC BY-NC 4.0</option>
+              <option value="mit">MIT</option>
+              <option value="apache-2.0">Apache 2.0</option>
+              <option value="odc-by">ODC-BY</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div id="update-fields" hidden>
+            <label class="lbl" for="f-existing">Existing repository</label>
+            <select class="fld fld-gap" id="f-existing">
+              <option value="">Loading…</option>
+            </select>
+          </div>
+
+          <label class="lbl" for="f-commit">Commit message</label>
+          <input class="fld" id="f-commit" type="text" placeholder="Add files via Hub uploader">
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Repository card</h3>
+          <p class="hint">Used to generate the README automatically.</p>
+
+          <label class="lbl" for="f-desc">Short description</label>
+          <textarea class="fld tall fld-gap" id="f-desc" rows="3"
+                    placeholder="What is this repository for?"></textarea>
+
+          <label class="lbl" for="f-tag">Tags</label>
+          <input class="fld" id="f-tag" type="text" placeholder="Press Enter to add a tag"
+                 style="margin-bottom:8px">
+          <div class="tags" id="tag-list"></div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="drop" id="dropzone">
+          <div class="drop-mark"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-cloud-upload"/></svg></div>
+          <div class="drop-title">Drag files or a folder here</div>
+          <div class="drop-sub">Folder structure is kept. Files over 10 MB upload via git LFS automatically.</div>
+          <div class="drop-actions">
+            <button class="btn btn-ghost" id="pick-files">Browse files…</button>
+            <button class="btn btn-ghost" id="pick-folder">Browse folder…</button>
+          </div>
+          <input id="in-files" type="file" multiple hidden>
+          <input id="in-folder" type="file" webkitdirectory hidden>
+          <div class="or">or</div>
+          <div class="drop-links">
+            <button class="btn-link" id="github-btn">
+              <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-github"/></svg>Import from GitHub</button>
+            <button class="btn-link" id="example-btn">Use example files</button>
+          </div>
+        </div>
+
+        <div class="card snug">
+          <div class="card-head">
+            <h3 class="card-title sm" style="margin:0">Staged files <span id="file-count"></span></h3>
+            <button class="btn-quiet" id="clear-files" hidden>Clear all</button>
+          </div>
+          <div class="empty" id="files-empty">Nothing staged yet. Add files to see checks and the generated README.</div>
+          <div class="files" id="file-list"></div>
+        </div>
+
+        <div class="pair">
+          <div class="card snug">
+            <h3 class="card-title sm">Pre-flight checks</h3>
+            <div class="empty" id="checks-empty">Add files to see checks and the generated README.</div>
+            <div class="checks" id="check-list"></div>
+          </div>
+          <div class="card snug sunken">
+            <h3 class="card-title sm">Generated README.md</h3>
+            <div class="empty" id="readme-empty">Nothing staged yet. Add files to see the generated README.</div>
+            <pre class="readme" id="readme-out" hidden></pre>
+          </div>
+        </div>
+
+        <div class="log-card" id="log-card" hidden>
+          <h3>Deployment log</h3>
+          <div class="log" id="log-lines"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footbar">
+      <span id="upload-hint">Add files to enable upload.</span>
+      <button class="btn btn-primary" id="upload-btn" disabled>
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-upload"/></svg>Upload to Hub</button>
+    </div>
+  </div>
+
+  <!-- ── history ────────────────────────────────────────────────────────── -->
+  <div class="view narrow" id="tab-history" hidden>
+    <h2 class="view-title">History</h2>
+    <p class="view-sub">Uploads made from this device through Hub uploader.</p>
+    <div class="empty" id="history-empty">No uploads yet on this device.</div>
+    <div class="rows" id="history-list"></div>
+  </div>
+
+  <!-- ── projects ───────────────────────────────────────────────────────── -->
+  <div class="view wide" id="tab-projects" hidden>
+    <h2 class="view-title">All IWMIHQ projects</h2>
+    <p class="view-sub">Everything IWMIHQ has published on the Hugging Face Hub — public
+      repositories, plus private ones your account can see as an organization member.</p>
+    <div class="empty" id="projects-loading">Loading…</div>
+    <p class="err" id="projects-error" hidden></p>
+    <div class="empty" id="projects-empty" hidden>No projects found for IWMIHQ yet.</div>
+    <div class="grid-cards" id="projects-list"></div>
+  </div>
+</div>
+
+<!-- ══ upload progress / result ═══════════════════════════════════════════ -->
+<div class="scrim" id="modal-upload" hidden>
+  <div class="modal md" role="dialog" aria-modal="true" aria-labelledby="upload-state-title">
+    <div class="modal-body center">
+
+      <div id="state-uploading">
+        <div class="modal-title" id="upload-state-title">Uploading…</div>
+        <div class="bar"><div id="upload-bar"></div></div>
+        <div class="pct" id="upload-pct">0%</div>
+        <div class="result-why">Keep this window open. Large files upload via git LFS.</div>
+        <div class="mini-log" id="mini-log"></div>
+      </div>
+
+      <div id="state-success" hidden>
+        <div class="result-mark ok"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check-circle-fill"/></svg></div>
+        <div class="result-title">Upload complete</div>
+        <div class="result-repo" id="done-repo"></div>
+        <div class="result-actions">
+          <a class="btn btn-primary" id="done-link" target="_blank" rel="noopener">View on Hub ↗</a>
+          <button class="btn btn-ghost" id="again-btn">Upload another</button>
+        </div>
+      </div>
+
+      <div id="state-failed" hidden>
+        <div class="result-mark bad"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-x-circle-fill"/></svg></div>
+        <div class="result-title">Upload failed</div>
+        <div class="result-why" id="fail-why"></div>
+        <button class="btn btn-ghost" id="back-btn">Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ help ══════════════════════════════════════════════════════════════ -->
+<div class="scrim" id="modal-help" hidden>
+  <div class="modal lg" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="modal-head">
+      <h5 id="help-title">How to use this app</h5>
+      <button class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body prose">
+      <p>1. Choose a repository type — Model, Dataset or Space.</p>
+      <p>2. Create a new repository or update an existing one in IWMIHQ.</p>
+      <p>3. Drag files or a folder, browse, or import from GitHub. Folder structure is kept.</p>
+      <p>4. Review the pre-flight checks and the auto-generated README.</p>
+      <p>5. Select “Upload to Hub”. Large files upload via git LFS automatically.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ settings ══════════════════════════════════════════════════════════ -->
+<div class="scrim" id="modal-settings" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal-head">
+      <h5 id="settings-title">Settings</h5>
+      <button class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="eyebrow">Application</div>
+      <div class="kv kv-gap"><span>IWMI Hub Uploader</span><span id="app-mode">v1.0.0</span></div>
+
+      <div class="eyebrow">Connection</div>
+      <div class="kv"><span>Organization</span><span>IWMIHQ</span></div>
+      <div class="kv"><span>Signed in as</span><span id="who">—</span></div>
+      <div class="kv mono"><span>Your token</span><span id="token-mask">—</span></div>
+      <div class="kv kv-gap"><span>Backend</span><span>Hugging Face Hub</span></div>
+
+      <label class="lbl" for="f-name-2">Your name</label>
+      <input class="fld" id="f-name-2" type="text" style="margin-bottom:8px">
+      <p class="hint tight">Recorded in every commit message.</p>
+      <button class="btn btn-primary" id="save-settings" style="margin-bottom:18px">Save</button>
+
+      <hr class="rule" style="margin-top:0">
+      <button class="btn btn-danger" id="signout-btn">Sign out</button>
+      <p class="hint" style="margin-top:8px">Signing out removes the token from this browser.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ install ═══════════════════════════════════════════════════════════ -->
+<div class="scrim" id="modal-install" hidden>
+  <div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="install-title">
+    <div class="modal-head">
+      <h5 id="install-title">Install this app</h5>
+      <button class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body prose" style="color:var(--ink-2)">
+      <p>Chrome or Edge on desktop: click the install icon at the right of the address bar,
+        or open the browser menu and choose “Install Hub uploader”.</p>
+      <p>Safari on iPadOS/macOS: use Share → Add to Dock. Once installed, this app opens in
+        its own window with no browser chrome, and works offline until you upload.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ github import ═════════════════════════════════════════════════════ -->
+<div class="scrim" id="modal-github" hidden>
+  <div class="modal md" role="dialog" aria-modal="true" aria-labelledby="github-title">
+    <div class="modal-head">
+      <h5 id="github-title">Import from GitHub</h5>
+      <button class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="hint">Public repository, e.g. <code>owner/repo</code>. The first 25 files under
+        5 MB are staged, preserving folder structure.</p>
+      <input class="fld" id="f-github" type="text" placeholder="owner/repo" style="margin-bottom:10px">
+      <p class="err" id="github-error" hidden></p>
+      <button class="btn btn-primary btn-block" id="import-btn">Import</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
