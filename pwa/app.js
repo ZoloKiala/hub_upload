@@ -24,7 +24,8 @@
 const HUB_ESM = 'https://cdn.jsdelivr.net/npm/@huggingface/hub@2.15.0/+esm';
 const ORG = 'IWMIHQ';
 const LFS_BYTES = 10 * 1024 * 1024;
-const KEY = { token: 'hu_token', name: 'hu_name', history: 'hu_history' };
+const KEY = { token: 'hu_token', name: 'hu_name', history: 'hu_history',
+              theme: 'hu_theme' };
 
 const state = {
   token: '',
@@ -176,6 +177,45 @@ function isStandalone() {
     return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
            window.navigator.standalone === true;
   } catch (e) { return false; }
+}
+
+/* ── appearance ─────────────────────────────────────────────────────────────
+ * Light, Dark, or follow the system. Stored, because a tool people keep open all
+ * day should not have to be told twice; and applied by one attribute on <html>,
+ * so every colour comes from the tokens and no component knows the difference.
+ */
+const THEMES = ['light', 'dark', 'system'];
+const THEME_LABEL = { light: 'Light', dark: 'Dark', system: 'Following the system' };
+
+function currentTheme() {
+  const stored = read(KEY.theme);
+  return THEMES.indexOf(stored) === -1 ? 'system' : stored;
+}
+
+function applyTheme(theme) {
+  if (theme === 'system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', theme);
+  store(KEY.theme, theme === 'system' ? null : theme);
+
+  // The browser paints its own chrome from this, so it has to move with the app.
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    const dark = theme === 'dark' ||
+      (theme === 'system' && window.matchMedia &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+    meta.setAttribute('content', dark ? '#0f1620' : '#28537D');
+  }
+
+  const button = $('theme-btn');
+  if (button) button.title = 'Appearance: ' + THEME_LABEL[theme] + ' — click to change';
+  const label = $('theme-label');
+  if (label) label.textContent = THEME_LABEL[theme];
+}
+
+function cycleTheme() {
+  const next = THEMES[(THEMES.indexOf(currentTheme()) + 1) % THEMES.length];
+  applyTheme(next);
+  toast('Appearance: ' + THEME_LABEL[next] + '.');
 }
 
 /* ── tabs and modals ────────────────────────────────────────────────────── */
@@ -652,6 +692,7 @@ function wire() {
   document.querySelectorAll('#visibility button').forEach((b) =>
     on(b, 'click', () => setVisibility(b.dataset.vis)));
 
+  on($('theme-btn'), 'click', cycleTheme);
   on($('help-btn'), 'click', () => openModal('modal-help'));
   on($('settings-btn'), 'click', () => openModal('modal-settings'));
   on($('github-btn'), 'click', () => { show($('github-error'), false); openModal('modal-github'); });
@@ -765,6 +806,7 @@ function wire() {
 
 function boot() {
   wire();
+  applyTheme(currentTheme());
 
   state.name = read(KEY.name) || '';
   $('f-name').value = state.name;

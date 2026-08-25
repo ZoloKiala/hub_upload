@@ -21,51 +21,59 @@
   src: url("assets/fonts/dmseriftext-latin.woff2") format("woff2");
 }
 @font-face {
-  font-family: "Source Sans 3";
+  font-family: "Public Sans";
   font-style: normal;
-  font-weight: 400 700;
+  font-weight: 300 700;
   font-display: swap;
-  src: url("assets/fonts/sourcesans3-latin.woff2") format("woff2");
+  src: url("assets/fonts/publicsans-latin.woff2") format("woff2");
 }
 
 :root {
   color-scheme: light;
 
+  /* Explorer's tokens, value for value. */
   --navy: #28537d;
   --navy-ink: #2e6096;
-  --navy-deep: #1e3f61;
+  --navy-deep: #1e4166;
+  --blue: #5088c6;
+  --blue-soft: #f2f6fa;
+  --blue-soft-border: #d8e3ee;
   --cyan: #46bbd4;
 
-  --ink: #33404a;
-  --ink-2: #6b7686;
-  --ink-3: #9aa5b1;
+  --ink: #17202b;
+  --ink-body: #3f4a57;
+  --ink-2: #5a6672;
+  --ink-3: #7a848f;
+  --ink-4: #9aa3ad;
 
-  --page-top: #ffffff;
-  --page-bottom: #eef2f4;
+  --page: #f2f3f4;
   --surface: #ffffff;
-  --field: #f3f5f6;
-  --sunken: #f6f8f9;
-  --slate: #33404a;
+  --surface-wash: #fafbfc;
+  --field: #ffffff;
+  --sunken: #fafbfc;
+  --slate: #17202b;
 
-  --line: rgba(40, 83, 125, 0.1);
-  --line-strong: rgba(40, 83, 125, 0.18);
-  --line-btn: rgba(40, 83, 125, 0.2);
-  --line-ghost: rgba(40, 83, 125, 0.28);
+  --line: #e8e7e7;
+  --line-soft: #eff0f1;
+  --line-strong: #dcdee1;
+  --line-btn: #dcdee1;
+  --line-ghost: #dcdee1;
 
   --ok: #22ad7a;
   --ok-ink: #178f63;
   --warn: #dd9103;
   --warn-ink: #8a5b02;
   --bad: #c0392b;
+  --caveat: #e86933;
   --space-ink: #b84f22;
 
   --serif: "DM Serif Text", Georgia, "Times New Roman", serif;
-  --sans: "Source Sans 3", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: "Public Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --r-card: 0.9rem;
-  --r-field: 0.4rem;
-  --r-btn: 0.5rem;
+  --r-card: 12px;
+  --r-field: 9px;
+  --r-btn: 9px;
   --r-pill: 999px;
 
   --lift: 0 10px 30px rgba(40, 83, 125, 0.12);
@@ -75,15 +83,15 @@
 
 * { box-sizing: border-box; }
 
+html { background: var(--page); }
 html, body { height: 100%; }
 body {
   margin: 0;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(circle at top, var(--page-top) 0%, var(--page-bottom) 65%);
-  background-attachment: fixed;
-  color: var(--ink);
+  background: var(--page);
+  color: var(--ink-body);
   font-family: var(--sans);
   font-size: 0.875rem;
   line-height: 1.55;
@@ -109,8 +117,9 @@ h1, h2, h3, h4, h5 {
   font-family: var(--serif);
   font-weight: 400;
   color: var(--navy);
+  letter-spacing: -0.005em;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 h2.view-title { font-size: 1.35rem; margin-bottom: 4px; }
 h3.card-title { font-size: 1.1rem; margin-bottom: 0.9rem; }
@@ -125,8 +134,10 @@ h3.card-title.sm { font-size: 0.98rem; margin-bottom: 0.6rem; }
   color: var(--ink);
   margin-bottom: 6px;
 }
-.hint { font-size: 0.75rem; color: var(--ink-2); margin: 0 0 6px; line-height: 1.5; }
+.hint { font-size: 0.75rem; color: var(--ink-3); margin: 0 0 6px; line-height: 1.5; }
 .hint.tight { margin: 0 0 14px; font-size: 0.72rem; }
+/* A hint that runs straight into the next field's label reads as part of it. */
+.hint + .lbl { margin-top: 14px; }
 .fld {
   width: 100%;
   background: var(--field);
@@ -137,10 +148,14 @@ h3.card-title.sm { font-size: 0.98rem; margin-bottom: 0.6rem; }
   font-family: inherit;
   font-size: 0.82rem;
 }
-.fld:focus-visible { outline: 2px solid var(--navy); outline-offset: 1px; }
+.fld:focus, .fld:focus-visible {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(80, 136, 198, 0.25);
+}
 .fld.mono { font-family: var(--mono); }
 .fld.tall { resize: vertical; }
-.fld[readonly] { color: var(--ink-2); border-color: rgba(40, 83, 125, 0.1); }
+.fld[readonly] { color: var(--ink-2); background: var(--surface-wash); }
 select.fld { padding: 0.45rem 0.5rem; }
 .fld-gap { margin-bottom: 0.9rem; }
 
@@ -152,6 +167,11 @@ select.fld { padding: 0.45rem 0.5rem; }
   border: 1px solid var(--line-strong);
   border-radius: var(--r-field);
   overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.prefixed:focus-within {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(80, 136, 198, 0.25);
 }
 .prefixed span {
   padding: 0.45rem 0 0.45rem 0.6rem;
@@ -267,20 +287,26 @@ select.fld { padding: 0.45rem 0.5rem; }
   gap: 1.1rem;
   flex-wrap: wrap;
 }
-.brand { display: flex; align-items: center; gap: 8px; }
-.brand-dot {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--r-pill);
-  background: linear-gradient(135deg, var(--navy) 0%, var(--cyan) 100%);
+/* IWMI's own wordmark, white on navy, exactly as Explorer's masthead carries it --
+   the white variant is the one IWMI publish for dark grounds, so it needs the navy
+   chip behind it rather than sitting invisibly on a white bar. */
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo {
+  background: var(--navy);
+  border-radius: 7px;
+  padding: 5px 9px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex: none;
-  color: #fff;
-  font-size: 0.65rem;
 }
-.brand-name { color: var(--navy); font-weight: 600; font-size: 0.92rem; font-family: var(--serif); }
+.brand-logo img { height: 17px; width: auto; display: block; }
+.brand-name {
+  color: var(--navy);
+  font-weight: 400;
+  font-size: 1rem;
+  font-family: var(--serif);
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+}
 .brand-where { font-size: 0.75rem; color: var(--ink-2); }
 
 .tabs {
@@ -288,7 +314,7 @@ select.fld { padding: 0.45rem 0.5rem; }
   display: inline-flex;
   gap: 0.3rem;
   padding: 0.15rem 0.25rem;
-  background: var(--page-bottom);
+  background: var(--blue-soft);
   border-radius: var(--r-pill);
 }
 .tabs button {
@@ -355,33 +381,31 @@ select.fld { padding: 0.45rem 0.5rem; }
 .hero-card {
   width: min(460px, 100%);
   background: var(--surface);
-  border: 1px solid rgba(40, 83, 125, 0.14);
-  border-radius: 1rem;
-  box-shadow: 0 24px 60px rgba(40, 83, 125, 0.14);
-  padding: 2.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: 0 18px 48px rgba(23, 32, 43, 0.1);
+  overflow: hidden;
 }
+/* The card opens with Explorer's masthead: navy band, the wordmark, a hairline
+   divider, the app's name in the display serif. */
 .hero-head {
+  background: var(--navy);
+  padding: 20px 24px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 22px;
+  gap: 12px;
 }
-.hero-mark {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--r-pill);
-  background: linear-gradient(135deg, var(--navy) 0%, var(--cyan) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.hero-head img { height: 26px; width: auto; display: block; }
+.hero-head h1 {
+  font-size: 1.15rem;
   color: #fff;
-  font-size: 1.3rem;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
 }
-.hero-head h1 { font-size: 1.5rem; }
-.hero-where { font-size: 0.82rem; color: var(--ink-2); }
+.hero-body { padding: 1.6rem 1.75rem 1.75rem; }
+.hero-where { font-size: 0.78rem; color: var(--ink-3); }
 .rule { border: 0; border-top: 1px solid var(--line); margin: 18px 0; }
-.lede { font-size: 0.9rem; color: var(--ink); margin: 0 0 12px; }
+.lede { font-size: 0.9rem; color: var(--ink); margin: 0 0 14px; }
 .err { font-size: 0.78rem; color: var(--bad); margin: 0 0 12px; }
 .copyright { text-align: center; font-size: 0.7rem; color: var(--ink-3); margin-top: 18px; }
 
@@ -515,7 +539,7 @@ select.fld { padding: 0.45rem 0.5rem; }
 }
 
 .log-card {
-  background: var(--slate);
+  background: var(--ink);
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   padding: 0.9rem 1.1rem;
@@ -581,9 +605,11 @@ select.fld { padding: 0.45rem 0.5rem; }
 .row-when { font-size: 0.72rem; color: var(--ink-2); }
 
 .badge {
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 0.15rem 0.5rem;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 2px 9px;
   border-radius: var(--r-pill);
   display: inline-flex;
   align-items: center;
@@ -592,6 +618,7 @@ select.fld { padding: 0.45rem 0.5rem; }
 .badge.model { background: rgba(40, 83, 125, 0.1); color: var(--navy); }
 .badge.dataset { background: rgba(34, 173, 122, 0.12); color: var(--ok-ink); }
 .badge.space { background: rgba(232, 105, 51, 0.12); color: var(--space-ink); }
+.badge.raster { background: rgba(70, 187, 212, 0.12); color: #1e7f94; }
 .badge.done { background: rgba(34, 173, 122, 0.12); color: var(--ok-ink); }
 .badge.private { background: rgba(40, 83, 125, 0.06); color: var(--ink-2); }
 .badge.failed { background: rgba(192, 57, 43, 0.1); color: var(--bad); }
@@ -730,7 +757,7 @@ select.fld { padding: 0.45rem 0.5rem; }
   margin-bottom: 8px;
 }
 
-.bar { height: 8px; border-radius: var(--r-pill); background: var(--page-bottom); overflow: hidden; margin-bottom: 8px; }
+.bar { height: 8px; border-radius: var(--r-pill); background: var(--blue-soft); overflow: hidden; margin-bottom: 8px; }
 .bar > div { height: 100%; background: var(--navy); border-radius: var(--r-pill); width: 0; transition: width 0.3s ease; }
 .pct { font-size: 0.75rem; color: var(--ink-2); margin-bottom: 14px; }
 .modal-title { font-size: 1rem; font-weight: 600; color: var(--navy); margin-bottom: 14px; }
@@ -764,6 +791,140 @@ select.fld { padding: 0.45rem 0.5rem; }
   box-shadow: 0 18px 40px rgba(40, 83, 125, 0.35);
   z-index: 300;
 }
+
+/* ── the dark look ─────────────────────────────────────────────────────────── *
+ * IWMI's palette turned down rather than a generic dark theme: the same navy,
+ * lifted where it has to carry text, and the same green/amber/orange for the
+ * pass, warn and fail it already means. Three states, in this order for a reason:
+ * the bare :root above is the complete light palette; the media query catches
+ * "System" (nothing stamped) without overriding an explicit light choice; the
+ * attribute rule lets the button win either way.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --navy: #7fb0e0;
+    --navy-ink: #8fbce8;
+    --navy-deep: #a8cbec;
+    --blue: #6fa3d6;
+    --blue-soft: #17273a;
+    --blue-soft-border: #26405c;
+
+    --ink: #e9eef3;
+    --ink-body: #b6c2ce;
+    --ink-2: #9aa8b6;
+    --ink-3: #8593a1;
+    --ink-4: #6f7d8b;
+
+    --page: #0f1620;
+    --surface: #151f2b;
+    --surface-wash: #121b25;
+    --field: #101a24;
+    --sunken: #121b25;
+
+    --line: #263240;
+    --line-soft: #1e2833;
+    --line-strong: #2d3d4f;
+    --line-btn: #2d3d4f;
+    --line-ghost: #2d3d4f;
+
+    --ok: #59c69b;
+    --ok-ink: #59c69b;
+    --warn: #e0ac48;
+    --warn-ink: #e0ac48;
+    --bad: #f08a7a;
+    --caveat: #f0916a;
+    --space-ink: #f0916a;
+
+    --lift: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --lift-btn: 0 6px 16px rgba(0, 0, 0, 0.5);
+    --lift-modal: 0 24px 60px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme="dark"] {
+  --navy: #7fb0e0;
+  --navy-ink: #8fbce8;
+  --navy-deep: #a8cbec;
+  --blue: #6fa3d6;
+  --blue-soft: #17273a;
+  --blue-soft-border: #26405c;
+
+  --ink: #e9eef3;
+  --ink-body: #b6c2ce;
+  --ink-2: #9aa8b6;
+  --ink-3: #8593a1;
+  --ink-4: #6f7d8b;
+
+  --page: #0f1620;
+  --surface: #151f2b;
+  --surface-wash: #121b25;
+  --field: #101a24;
+  --sunken: #121b25;
+
+  --line: #263240;
+  --line-soft: #1e2833;
+  --line-strong: #2d3d4f;
+  --line-btn: #2d3d4f;
+  --line-ghost: #2d3d4f;
+
+  --ok: #59c69b;
+  --ok-ink: #59c69b;
+  --warn: #e0ac48;
+  --warn-ink: #e0ac48;
+  --bad: #f08a7a;
+  --caveat: #f0916a;
+  --space-ink: #f0916a;
+
+  --lift: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --lift-btn: 0 6px 16px rgba(0, 0, 0, 0.5);
+  --lift-modal: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* Four things do not follow the tokens on their own. */
+
+/* The primary button is navy-on-white in the light look; in the dark one navy is
+   a pale blue, so its text has to become the dark ground. */
+:root[data-theme="dark"] .btn-primary,
+:root[data-theme="dark"] .seg button[aria-pressed="true"],
+:root[data-theme="dark"] .tabs button[aria-selected="true"] { color: #0f1620; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .btn-primary,
+  :root:not([data-theme="light"]) .seg button[aria-pressed="true"],
+  :root:not([data-theme="light"]) .tabs button[aria-selected="true"] { color: #0f1620; }
+}
+
+/* The wordmark is white-on-transparent, so it keeps its navy chip in both looks --
+   on a dark surface the chip reads as the brand block it is on iwmi.org. */
+
+/* The upload bar is a translucent white in the light look. */
+:root[data-theme="dark"] .footbar { background: rgba(21, 31, 43, 0.97); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .footbar { background: rgba(21, 31, 43, 0.97); }
+}
+
+/* The connect card's masthead stays brand navy in both looks: it is the one place
+   the deep navy still has white text on it. */
+:root[data-theme="dark"] .hero-head,
+:root[data-theme="dark"] .brand-logo { background: #28537d; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .hero-head,
+  :root:not([data-theme="light"]) .brand-logo { background: #28537d; }
+}
+
+/* The deployment log is already a dark card; in the dark look it needs to be
+   darker than the surface it sits on, not lighter. */
+:root[data-theme="dark"] .log-card { background: #0a1017; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .log-card { background: #0a1017; }
+}
+
+/* The theme button. Its icon says what is in force, not what a click will do:
+   sun for light, moon for dark, half circle for following the system. */
+.theme-btn { position: relative; }
+.theme-btn .ic { display: none; }
+:root[data-theme="light"] .theme-btn .ic-light,
+:root[data-theme="dark"] .theme-btn .ic-dark,
+:root:not([data-theme]) .theme-btn .ic-system { display: inline-block; }
 
 /* Installed as an app, the title bar is the window's own; there is no browser
    chrome to sit under, so the sticky bar needs no extra room. */

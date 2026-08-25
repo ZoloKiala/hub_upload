@@ -12,6 +12,19 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="app.css">
+<script>
+  /* Before first paint: a stored choice becomes an attribute on <html>, so a dark
+     app does not flash light on every launch. "system" stamps nothing and lets the
+     media query decide. */
+  (function () {
+    try {
+      var choice = localStorage.getItem('hu_theme');
+      if (choice === 'light' || choice === 'dark') {
+        document.documentElement.setAttribute('data-theme', choice);
+      }
+    } catch (e) {}
+  })();
+</script>
 </head>
 <body>
 
@@ -24,13 +37,14 @@
 <section class="hero" id="screen-connect">
   <div class="hero-card">
     <div class="hero-head">
-      <div class="hero-mark"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-droplet-half"/></svg></div>
+      <img src="assets/iwmi-logo-white.png"
+           alt="IWMI — International Water Management Institute">
       <h1>Hub uploader</h1>
-      <div class="hero-where">IWMI · Hugging Face Hub</div>
     </div>
 
-    <hr class="rule" style="margin-top:0">
-    <p class="lede">Connect your Hugging Face account to start.</p>
+    <div class="hero-body">
+    <p class="lede">Connect your Hugging Face account to start.
+      Uploads go to <strong>IWMIHQ</strong> on the Hugging Face Hub.</p>
 
     <label class="lbl" for="f-token">Your access token</label>
     <input class="fld mono fld-gap" id="f-token" type="password" autocomplete="off"
@@ -54,6 +68,7 @@
     <p class="err" id="connect-error" hidden></p>
     <button class="btn btn-primary btn-block" id="connect-btn">Continue</button>
     <div class="copyright">© 2026 International Water Management Institute (IWMI)</div>
+    </div>
   </div>
 </section>
 
@@ -63,7 +78,8 @@
   <div class="topbar">
     <div class="topbar-inner">
       <div class="brand">
-        <span class="brand-dot"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-droplet-half"/></svg></span>
+        <span class="brand-logo"><img src="assets/iwmi-logo-white.png"
+              alt="IWMI — International Water Management Institute"></span>
         <span class="brand-name">Hub uploader</span>
       </div>
       <div class="brand-where">IWMIHQ · Hugging Face Hub</div>
@@ -79,6 +95,12 @@
 
       <button class="pill-btn" id="install-btn">
         <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-display"/></svg>Install app</button>
+      <button class="icon-btn theme-btn" id="theme-btn" title="Appearance"
+              aria-label="Change appearance">
+        <svg class="ic ic-light" aria-hidden="true"><use href="assets/icons.svg#i-brightness-high-fill"/></svg>
+        <svg class="ic ic-dark" aria-hidden="true"><use href="assets/icons.svg#i-moon-stars-fill"/></svg>
+        <svg class="ic ic-system" aria-hidden="true"><use href="assets/icons.svg#i-circle-half"/></svg>
+      </button>
       <button class="icon-btn" id="help-btn" title="Help" aria-label="Help">
         <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-question-circle"/></svg></button>
       <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Settings">
@@ -321,6 +343,8 @@
     <div class="modal-body">
       <div class="eyebrow">Application</div>
       <div class="kv kv-gap"><span>IWMI Hub Uploader</span><span id="app-mode">v1.0.0</span></div>
+
+      <div class="kv kv-gap"><span>Appearance</span><span id="theme-label">—</span></div>
 
       <div class="eyebrow">Connection</div>
       <div class="kv"><span>Organization</span><span>IWMIHQ</span></div>

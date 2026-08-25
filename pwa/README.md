@@ -6,7 +6,7 @@ on the Hugging Face Hub. Static files only — no Python, no Node, no server.
 ```
 pwa/
   index.html   every screen, as markup
-  app.css      the design system (navy #28537D, DM Serif Text + Source Sans 3)
+  app.css      IWMI's design system, light and dark (see below)
   app.js       state, Hub calls, staging, checks, README generation
   sw.js        service worker: the shell works offline
   manifest.json
@@ -30,6 +30,25 @@ What this needs from an admin: each person has a Hugging Face account, is a memb
 IWMIHQ with write access, and makes themselves a **write** token
 (`huggingface.co/settings/tokens`). The app checks the token on connect and refuses a
 read-only one straight away, rather than at the end of a long upload.
+
+## How it looks
+
+The palette, type and hairlines are Explorer's, value for value from
+`services/explorer/static/iwmi-explorer.css` in the `open_data_cube` repo: navy
+`#28537D`, the `#f2f3f4` page, white cards on `#e8e7e7`, white fields on `#dcdee1`
+with a blue focus ring, the five-step ink ramp, DM Serif Text over Public Sans, and
+the real IWMI wordmark. The uploader, Explorer and the two guides are one family.
+
+The button beside Help switches **Light → Dark → Follow the system**, and remembers.
+Dark is the same palette turned down — the same navy, lifted to `#7fb0e0` where it
+carries text on a dark ground, and the same green/amber/orange for pass, warn and
+fail. It is all tokens, so no component knows which look it is drawing in; four
+things that cannot follow a token (the primary button's text, the upload bar's
+translucency, the brand block and the log card) are handled explicitly.
+
+The choice is applied by a small inline script in `<head>` before first paint, so a
+dark app never flashes light on launch, and `<meta name="theme-color">` moves with
+it so the browser's own chrome matches.
 
 ## Run it
 

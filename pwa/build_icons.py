@@ -25,8 +25,10 @@ OUT = os.path.join(HERE, "assets", "icons.svg")
 
 # Every icon the app references, and nothing else.
 ICONS = [
-    "box-arrow-up-right", "box-seam", "check-circle-fill", "clock-history",
+    "box-arrow-up-right", "box-seam", "brightness-high-fill", "check-circle-fill",
+    "circle-half", "clock-history",
     "cloud-upload", "dash-lg", "database-fill", "display", "droplet-half",
+    "moon-stars-fill",
     "exclamation-triangle-fill", "eye", "file-earmark", "gear-fill", "github",
     "grid-3x3-gap-fill", "lock-fill", "question-circle", "rocket-takeoff-fill",
     "search", "square", "upload", "x", "x-circle-fill", "x-lg",
