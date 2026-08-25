@@ -111,6 +111,50 @@
         <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-question-circle"/></svg></button>
       <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Settings">
         <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-gear-fill"/></svg></button>
+
+      <!-- Below 700px the rail above collapses into this. Everything it held gets
+           its name back inside the menu, where there is room for words. -->
+      <button class="icon-btn menu-btn" id="menu-btn" title="Menu" aria-label="Menu"
+              aria-expanded="false" aria-controls="menu">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-list"/></svg></button>
+    </div>
+
+    <div class="menu" id="menu" hidden>
+      <button class="menu-item" data-menu-tab="upload">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-cloud-upload"/></svg>
+        Upload<span class="menu-now" aria-hidden="true">●</span></button>
+      <button class="menu-item" data-menu-tab="history">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-clock-history"/></svg>
+        History<span class="menu-now" aria-hidden="true">●</span></button>
+      <button class="menu-item" data-menu-tab="projects">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-grid-3x3-gap-fill"/></svg>
+        Projects<span class="menu-now" aria-hidden="true">●</span></button>
+
+      <div class="menu-sep"></div>
+
+      <div class="menu-row">
+        <span>Appearance</span>
+        <div class="theme-toggle" role="group" aria-label="Appearance">
+          <button data-look="light" title="Light" aria-label="Light" aria-pressed="true">
+            <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-brightness-high-fill"/></svg>
+          </button>
+          <button data-look="dark" title="Dark" aria-label="Dark" aria-pressed="false">
+            <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-moon-stars-fill"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="menu-sep"></div>
+
+      <button class="menu-item" id="menu-install">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-display"/></svg>
+        Install this app</button>
+      <button class="menu-item" id="menu-help">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-question-circle"/></svg>
+        How to use this app</button>
+      <button class="menu-item" id="menu-settings">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-gear-fill"/></svg>
+        Settings</button>
     </div>
   </div>
 

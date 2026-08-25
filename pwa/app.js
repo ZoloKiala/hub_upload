@@ -216,7 +216,7 @@ function setTheme(look) {
 /** Reflect the look in the toggle, the settings row and the browser's own chrome. */
 function paintTheme() {
   const active = activeTheme();
-  document.querySelectorAll('#theme-toggle button').forEach((b) => {
+  document.querySelectorAll('.theme-toggle button').forEach((b) => {
     b.setAttribute('aria-pressed', String(b.dataset.look === active));
   });
   const meta = document.querySelector('meta[name="theme-color"]');
@@ -234,10 +234,25 @@ function setTab(tab) {
   document.querySelectorAll('.tabs button').forEach((b) => {
     b.setAttribute('aria-selected', String(b.dataset.tab === tab));
   });
+  document.querySelectorAll('[data-menu-tab]').forEach((b) => {
+    b.setAttribute('aria-current', String(b.dataset.menuTab === tab));
+  });
   show($('tab-upload'), tab === 'upload');
   show($('tab-history'), tab === 'history');
   show($('tab-projects'), tab === 'projects');
   if (tab === 'projects' && !state.projects.length) loadProjects();
+}
+
+function toggleMenu(open) {
+  const menu = $('menu');
+  const button = $('menu-btn');
+  const show_it = open === undefined ? menu.hidden : open;
+  show(menu, show_it);
+  button.setAttribute('aria-expanded', String(show_it));
+  if (show_it) {
+    const first = menu.querySelector('.menu-item');
+    if (first) first.focus();
+  }
 }
 
 function openModal(id) {
@@ -695,6 +710,20 @@ function wire() {
 
   document.querySelectorAll('.tabs button').forEach((b) =>
     on(b, 'click', () => setTab(b.dataset.tab)));
+
+  on($('menu-btn'), 'click', (e) => { e.stopPropagation(); toggleMenu(); });
+  document.querySelectorAll('[data-menu-tab]').forEach((b) =>
+    on(b, 'click', () => { setTab(b.dataset.menuTab); toggleMenu(false); }));
+  on($('menu-help'), 'click', () => { toggleMenu(false); openModal('modal-help'); });
+  on($('menu-settings'), 'click', () => { toggleMenu(false); openModal('modal-settings'); });
+  // Clicking the appearance toggle inside the menu should not close it: you may
+  // want to see what the other look does to the page behind.
+  on($('menu'), 'click', (e) => { if (e.target.closest('.theme-toggle')) e.stopPropagation(); });
+  on(document, 'click', (e) => {
+    if (!$('menu').hidden && !e.target.closest('#menu') && !e.target.closest('#menu-btn')) {
+      toggleMenu(false);
+    }
+  });
   document.querySelectorAll('#repo-type button').forEach((b) =>
     on(b, 'click', () => setRepoType(b.dataset.type)));
   document.querySelectorAll('#repo-mode button').forEach((b) =>
@@ -702,7 +731,7 @@ function wire() {
   document.querySelectorAll('#visibility button').forEach((b) =>
     on(b, 'click', () => setVisibility(b.dataset.vis)));
 
-  document.querySelectorAll('#theme-toggle button').forEach((b) =>
+  document.querySelectorAll('.theme-toggle button').forEach((b) =>
     on(b, 'click', () => setTheme(b.dataset.look)));
 
   // With no explicit choice, follow the machine when it changes at dusk.
@@ -728,6 +757,7 @@ function wire() {
   };
   on($('install-btn'), 'click', install);
   on($('install-btn-2'), 'click', install);
+  on($('menu-install'), 'click', () => { toggleMenu(false); install(); });
   document.querySelectorAll('[data-close]').forEach((b) => on(b, 'click', closeModals));
   document.querySelectorAll('.scrim').forEach((s) => on(s, 'click', (e) => {
     // Clicking the backdrop dismisses, except mid-upload where it would look
@@ -736,6 +766,7 @@ function wire() {
   }));
   on(document, 'keydown', (e) => {
     if (e.key !== 'Escape') return;
+    if (!$('menu').hidden) { toggleMenu(false); $('menu-btn').focus(); return; }
     if (!$('modal-upload').hidden && $('state-uploading').hidden === false) return;
     closeModals();
   });

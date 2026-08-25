@@ -55,13 +55,15 @@ it so the browser's own chrome matches.
 
 ## At different sizes
 
-The top bar never wraps. Each breakpoint drops whatever has stopped earning its
-space, in order: the `IWMIHQ · Hugging Face Hub` line (1080px), the app's name
-(880px), the tab and install labels (700px), the install pill itself (560px, where
-Settings offers it instead), and Help (380px). Every button keeps its label as an
-accessible name, so nothing is lost to a screen reader. Below 900px the two-column
-upload view stacks; below 620px *tall* the file, README and log panels give up their
-fixed heights so a short window scrolls as one page.
+The top bar never wraps. It drops the `IWMIHQ · Hugging Face Hub` line at 1080px and
+the app's name at 880px, and at **700px the whole rail collapses into a menu** —
+sections, Install, Help, Settings and the appearance toggle, each with its name back,
+which three unlabelled icons could not give them. The menu marks the section you are
+in, closes on Escape or a click outside, and keeps its appearance toggle in step with
+the one in the bar.
+
+Below 900px the two-column upload view stacks; below 620px *tall* the file, README
+and log panels give up their fixed heights so a short window scrolls as one page.
 
 ## Run it
 
