@@ -184,38 +184,48 @@ function isStandalone() {
  * day should not have to be told twice; and applied by one attribute on <html>,
  * so every colour comes from the tokens and no component knows the difference.
  */
-const THEMES = ['light', 'dark', 'system'];
-const THEME_LABEL = { light: 'Light', dark: 'Dark', system: 'Following the system' };
-
-function currentTheme() {
+/** What is stored: 'light', 'dark', or nothing at all — nothing meaning "whatever
+ *  this machine is asking for", which is the state before anyone chooses. */
+function chosenTheme() {
   const stored = read(KEY.theme);
-  return THEMES.indexOf(stored) === -1 ? 'system' : stored;
+  return (stored === 'light' || stored === 'dark') ? stored : null;
 }
 
-function applyTheme(theme) {
-  if (theme === 'system') document.documentElement.removeAttribute('data-theme');
-  else document.documentElement.setAttribute('data-theme', theme);
-  store(KEY.theme, theme === 'system' ? null : theme);
+/** Which look is actually on screen. The toggle shows this, so before a choice is
+ *  made it still points at the right half. */
+function activeTheme() {
+  const chosen = chosenTheme();
+  if (chosen) return chosen;
+  try {
+    return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      ? 'dark' : 'light';
+  } catch (e) { return 'light'; }
+}
 
-  // The browser paints its own chrome from this, so it has to move with the app.
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) {
-    const dark = theme === 'dark' ||
-      (theme === 'system' && window.matchMedia &&
-       window.matchMedia('(prefers-color-scheme: dark)').matches);
-    meta.setAttribute('content', dark ? '#0f1620' : '#28537D');
+function setTheme(look) {
+  if (look === 'light' || look === 'dark') {
+    document.documentElement.setAttribute('data-theme', look);
+    store(KEY.theme, look);
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    store(KEY.theme, null);
   }
-
-  const button = $('theme-btn');
-  if (button) button.title = 'Appearance: ' + THEME_LABEL[theme] + ' — click to change';
-  const label = $('theme-label');
-  if (label) label.textContent = THEME_LABEL[theme];
+  paintTheme();
 }
 
-function cycleTheme() {
-  const next = THEMES[(THEMES.indexOf(currentTheme()) + 1) % THEMES.length];
-  applyTheme(next);
-  toast('Appearance: ' + THEME_LABEL[next] + '.');
+/** Reflect the look in the toggle, the settings row and the browser's own chrome. */
+function paintTheme() {
+  const active = activeTheme();
+  document.querySelectorAll('#theme-toggle button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.look === active));
+  });
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', active === 'dark' ? '#0f1620' : '#28537D');
+  const label = $('theme-label');
+  if (label) {
+    label.textContent = (active === 'dark' ? 'Dark' : 'Light') +
+      (chosenTheme() ? '' : ' · from your system');
+  }
 }
 
 /* ── tabs and modals ────────────────────────────────────────────────────── */
@@ -692,7 +702,16 @@ function wire() {
   document.querySelectorAll('#visibility button').forEach((b) =>
     on(b, 'click', () => setVisibility(b.dataset.vis)));
 
-  on($('theme-btn'), 'click', cycleTheme);
+  document.querySelectorAll('#theme-toggle button').forEach((b) =>
+    on(b, 'click', () => setTheme(b.dataset.look)));
+
+  // With no explicit choice, follow the machine when it changes at dusk.
+  try {
+    const watch = window.matchMedia('(prefers-color-scheme: dark)');
+    const react = () => { if (!chosenTheme()) paintTheme(); };
+    if (watch.addEventListener) watch.addEventListener('change', react);
+    else if (watch.addListener) watch.addListener(react);
+  } catch (e) { /* older browser: the choice still works, it just will not follow */ }
   on($('help-btn'), 'click', () => openModal('modal-help'));
   on($('settings-btn'), 'click', () => openModal('modal-settings'));
   on($('github-btn'), 'click', () => { show($('github-error'), false); openModal('modal-github'); });
@@ -806,7 +825,7 @@ function wire() {
 
 function boot() {
   wire();
-  applyTheme(currentTheme());
+  paintTheme();
 
   state.name = read(KEY.name) || '';
   $('f-name').value = state.name;

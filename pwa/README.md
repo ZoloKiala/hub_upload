@@ -39,8 +39,11 @@ The palette, type and hairlines are Explorer's, value for value from
 with a blue focus ring, the five-step ink ramp, DM Serif Text over Public Sans, and
 the real IWMI wordmark. The uploader, Explorer and the two guides are one family.
 
-The button beside Help switches **Light → Dark → Follow the system**, and remembers.
-Dark is the same palette turned down — the same navy, lifted to `#7fb0e0` where it
+The toggle beside Help switches between **Light** and **Dark**, and remembers. Both
+options are visible with the one in force filled, so the choice is one click and no
+guesswork. Until somebody chooses, it follows the machine — showing whichever look
+the system asks for, and changing with it at dusk; clicking either half makes it
+explicit. Dark is the same palette turned down — the same navy, lifted to `#7fb0e0` where it
 carries text on a dark ground, and the same green/amber/orange for pass, warn and
 fail. It is all tokens, so no component knows which look it is drawing in; four
 things that cannot follow a token (the primary button's text, the upload bar's

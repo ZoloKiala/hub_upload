@@ -886,10 +886,12 @@ select.fld { padding: 0.45rem 0.5rem; }
    a pale blue, so its text has to become the dark ground. */
 :root[data-theme="dark"] .btn-primary,
 :root[data-theme="dark"] .seg button[aria-pressed="true"],
+:root[data-theme="dark"] .theme-toggle button[aria-pressed="true"],
 :root[data-theme="dark"] .tabs button[aria-selected="true"] { color: #0f1620; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .btn-primary,
   :root:not([data-theme="light"]) .seg button[aria-pressed="true"],
+  :root:not([data-theme="light"]) .theme-toggle button[aria-pressed="true"],
   :root:not([data-theme="light"]) .tabs button[aria-selected="true"] { color: #0f1620; }
 }
 
@@ -918,13 +920,39 @@ select.fld { padding: 0.45rem 0.5rem; }
   :root:not([data-theme="light"]) .log-card { background: #0a1017; }
 }
 
-/* The theme button. Its icon says what is in force, not what a click will do:
-   sun for light, moon for dark, half circle for following the system. */
-.theme-btn { position: relative; }
-.theme-btn .ic { display: none; }
-:root[data-theme="light"] .theme-btn .ic-light,
-:root[data-theme="dark"] .theme-btn .ic-dark,
-:root:not([data-theme]) .theme-btn .ic-system { display: inline-block; }
+/* The appearance toggle: both looks visible, the one in force filled. Same idiom
+   as the tab rail beside it — a soft pill holding two round segments — so it reads
+   as a choice rather than a button that does something. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: var(--blue-soft);
+  border: 1px solid var(--line);
+}
+.theme-toggle button {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  padding: 0;
+}
+.theme-toggle button:hover { color: var(--navy); }
+.theme-toggle button[aria-pressed="true"] {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: var(--lift-btn);
+}
+.theme-toggle button:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 
 /* Installed as an app, the title bar is the window's own; there is no browser
    chrome to sit under, so the sticky bar needs no extra room. */

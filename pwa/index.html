@@ -95,12 +95,14 @@
 
       <button class="pill-btn" id="install-btn">
         <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-display"/></svg>Install app</button>
-      <button class="icon-btn theme-btn" id="theme-btn" title="Appearance"
-              aria-label="Change appearance">
-        <svg class="ic ic-light" aria-hidden="true"><use href="assets/icons.svg#i-brightness-high-fill"/></svg>
-        <svg class="ic ic-dark" aria-hidden="true"><use href="assets/icons.svg#i-moon-stars-fill"/></svg>
-        <svg class="ic ic-system" aria-hidden="true"><use href="assets/icons.svg#i-circle-half"/></svg>
-      </button>
+      <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Appearance">
+        <button data-look="light" title="Light" aria-label="Light" aria-pressed="true">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-brightness-high-fill"/></svg>
+        </button>
+        <button data-look="dark" title="Dark" aria-label="Dark" aria-pressed="false">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-moon-stars-fill"/></svg>
+        </button>
+      </div>
       <button class="icon-btn" id="help-btn" title="Help" aria-label="Help">
         <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-question-circle"/></svg></button>
       <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Settings">
