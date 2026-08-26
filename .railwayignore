@@ -1,0 +1,23 @@
+# What the deployment does not need.
+#
+# The hosted app is pwa/ served by serve_pwa.py, and that is all. This file matters
+# because a working copy that has ever built the old generation still holds several
+# hundred megabytes of installer, PyInstaller output and node_modules on disk, and
+# `railway up` uploads the directory rather than the commit.
+#
+# Ignored by .gitignore too, but stated here so an upload cannot depend on that.
+dist-app/
+dist-backend/
+build-backend/
+electron/
+src-tauri/
+__pycache__/
+*.pyc
+.gradio/
+node_modules/
+.env
+
+# Repository furniture, not runtime.
+.git/
+.github/
+README.md
