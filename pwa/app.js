@@ -36,6 +36,10 @@ const state = {
   repoMode: 'create',
   visibility: 'public',
   files: [],
+  root: '',
+  keepRoot: false,
+  skipped: [],
+  refused: [],
   tags: [],
   history: [],
   projects: [],
@@ -432,15 +436,20 @@ async function inspectTarget() {
     }
 
     let maintainers = [];
-    let readme = '';
+    let existing = '';
     try {
-      readme = await (await h.downloadFile({ repo, path: 'README.md',
-                                             accessToken: state.token })).text();
-      maintainers = parseMaintainers(readme);
+      existing = await (await h.downloadFile({ repo, path: 'README.md',
+                                               accessToken: state.token })).text();
+      maintainers = parseMaintainers(existing);
     } catch (e) { /* no README, or not readable: treat as unclaimed */ }
 
     const mine = readsAsMine(maintainers);
-    state.target = { name: name, writable: true, maintainers: maintainers, mine: mine };
+    state.target = { name: name, writable: true, maintainers: maintainers, mine: mine,
+                     readme: existing };
+    // A repository that already documents itself keeps its README unless somebody
+    // deliberately says otherwise.
+    const box = $('f-write-readme');
+    if (box) box.checked = !existing;
 
     if (!maintainers.length) {
       note.className = 'owner-note';
@@ -468,18 +477,80 @@ async function inspectTarget() {
 }
 
 /* ── files ──────────────────────────────────────────────────────────────── */
+/* Nothing here belongs in a repository, and every one of these arrived in a real
+   upload or is one directory away from doing so. */
+const JUNK = [
+  /(^|\/)__pycache__\//, /\.py[co]$/, /(^|\/)\.git\//, /(^|\/)\.svn\//,
+  /(^|\/)\.DS_Store$/, /(^|\/)Thumbs\.db$/, /(^|\/)desktop\.ini$/,
+  /(^|\/)node_modules\//, /(^|\/)\.ipynb_checkpoints\//, /\.egg-info\//,
+  /(^|\/)\.venv\//, /(^|\/)venv\//, /(^|\/)\.mypy_cache\//,
+  /(^|\/)\.pytest_cache\//, /(^|\/)\.terraform\//, /(^|\/)\.next\//,
+];
+
+/* These are refused outright rather than filtered: a token pushed to a public
+   repository is not a tidiness problem. */
+const SECRETS = [
+  /(^|\/)\.env($|\.)/, /\.pem$/, /\.key$/, /(^|\/)id_[a-z]*rsa$/,
+  /(^|\/)\.npmrc$/, /(^|\/)\.netrc$/, /(^|\/)credentials(\.json)?$/,
+  /(^|\/)service[-_]account.*\.json$/, /(^|\/)\.aws\//,
+];
+
+function matchesAny(path, patterns) {
+  return patterns.some((re) => re.test(path));
+}
+
+/** The single folder every path in a batch starts with, if there is one.
+ *  Picking a folder gives every file that folder's name as a prefix, and what
+ *  people mean is almost always "put what is inside it at the root". */
+function commonRoot(paths) {
+  const withFolder = paths.filter((p) => p.indexOf('/') !== -1);
+  if (!withFolder.length || withFolder.length !== paths.length) return '';
+  const first = withFolder[0].slice(0, withFolder[0].indexOf('/'));
+  return withFolder.every((p) => p.slice(0, p.indexOf('/')) === first) ? first : '';
+}
+
 function addFiles(fileList) {
   const arr = Array.from(fileList || []);
   if (!arr.length) return;
+
+  const secrets = [];
+  const junk = [];
+  const keep = [];
   arr.forEach((file) => {
+    const path = file.webkitRelativePath || file.name;
+    if (matchesAny(path, SECRETS)) secrets.push(path);
+    else if (matchesAny(path, JUNK)) junk.push(path);
+    else keep.push({ file: file, base: path });
+  });
+
+  state.skipped = junk;
+  state.refused = secrets;
+
+  const root = commonRoot(keep.map((k) => k.base));
+  if (root) state.root = root;
+
+  keep.forEach((k) => {
     state.files.push({
       id: 'f' + Date.now() + Math.random().toString(36).slice(2, 7),
-      path: file.webkitRelativePath || file.name,
-      size: file.size,
-      isLarge: file.size > LFS_BYTES,
-      file: file,
+      base: k.base,
+      path: pathFor(k.base),
+      size: k.file.size,
+      isLarge: k.file.size > LFS_BYTES,
+      file: k.file,
     });
   });
+  refresh();
+}
+
+/** Where a file lands, given whether the picked folder is being kept. */
+function pathFor(base) {
+  if (!state.root || state.keepRoot) return base;
+  const prefix = state.root + '/';
+  return base.indexOf(prefix) === 0 ? base.slice(prefix.length) : base;
+}
+
+function restage() {
+  state.files.forEach((f) => { f.path = pathFor(f.base || f.path); });
   refresh();
 }
 
@@ -489,6 +560,7 @@ function removeFile(id) {
 }
 
 function exampleFiles() {
+  state.root = '';
   addFiles([
     new File(['# Example dataset\n\nSample files staged by Hub uploader.\n'],
              'NOTES.md', { type: 'text/markdown' }),
@@ -533,9 +605,20 @@ function checks() {
   out.push(big.length ? warn(big.length + ' file(s) will upload via git LFS')
                       : pass('No files require git LFS'));
 
-  out.push(val('f-desc').trim() ? pass('Repository card has a description')
-                                : warn('Add a short description for the README'));
-  out.push(pass('README.md will be generated automatically'));
+  const existing = existingReadme();
+  if (!willWriteReadme()) {
+    out.push(pass(existing ? 'Existing README.md left untouched'
+                           : 'No README.md will be written'));
+  } else if (existing) {
+    out.push(warn('README.md front matter updated — its text is kept'));
+  } else {
+    out.push(val('f-desc').trim() ? pass('Repository card has a description')
+                                  : warn('Add a short description for the README'));
+    out.push(pass('README.md will be generated'));
+  }
+  if (state.refused.length) {
+    out.push(fail(state.refused.length + ' file(s) refused as secrets — they are not staged'));
+  }
   return out;
 }
 
@@ -558,7 +641,54 @@ function confirmedTarget() {
   return typed === info.name || typed === info.name.split('/').pop();
 }
 
+/** Does the repository we are updating already have a README? */
+function existingReadme() {
+  return (state.repoMode === 'update' && state.target && state.target.readme) || '';
+}
+
+/** Whether a README will be written at all. Off by default when one exists: the
+ *  Space this rule comes from had its title, emoji, sdk, sdk_version and app_file in
+ *  that file, and replacing it changed what the Hub builds. */
+function willWriteReadme() {
+  const box = $('f-write-readme');
+  return box ? box.checked : true;
+}
+
+/** Merge into an existing README instead of replacing it: keep every front-matter
+ *  key it already has, refresh only `maintainers:`, and leave the prose alone. We
+ *  do not rewrite words we did not write. */
+function mergedReadme(existing) {
+  // Deliberately tight: \s* after the closing --- swallows the blank line that
+  // follows it, and the body has to come back byte for byte.
+  const front = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*\r?\n/.exec(existing);
+  const maintainers = maintainerList();
+  const block = maintainers.length
+    ? 'maintainers:\n' + maintainers.map((m) => '  - ' + m).join('\n') + '\n'
+    : '';
+
+  if (!front) {
+    // No front matter at all: add one and keep the body untouched.
+    return block ? '---\n' + block + '---\n\n' + existing : existing;
+  }
+
+  // Drop any maintainers block, keep every other line exactly as it was.
+  const lines = front[1].split('\n');
+  const kept = [];
+  let inList = false;
+  lines.forEach((line) => {
+    if (/^maintainers:/.test(line)) { inList = true; return; }
+    if (inList && /^\s+-\s/.test(line)) return;
+    inList = false;
+    kept.push(line);
+  });
+  const head = kept.join('\n').replace(/\n+$/, '');
+  return '---\n' + (head ? head + '\n' : '') + block + '---\n' +
+         existing.slice(front[0].length);
+}
+
 function readme() {
+  const existing = existingReadme();
+  if (existing) return mergedReadme(existing);
   const name = state.repoMode === 'create' ? target() : target().split('/').pop();
   let front = '---\n';
   if (state.repoMode === 'create') {
@@ -606,9 +736,67 @@ function refresh() {
     '<div class="check ' + c.level + '">' + icon(c.icon) + '<span>' + esc(c.label) + '</span></div>'
   ).join('');
 
-  show($('readme-empty'), !has);
-  show($('readme-out'), has);
-  if (has) $('readme-out').textContent = readme();
+  // The README panel says what will actually happen to the file.
+  const existing = existingReadme();
+  const writing = willWriteReadme();
+  const choice = $('readme-choice');
+  if (choice) {
+    choice.textContent = existing
+      ? 'Update README.md (it already has one)'
+      : 'Write README.md';
+  }
+  if (!writing) {
+    show($('readme-empty'), true);
+    show($('readme-out'), false);
+    $('readme-empty').textContent = existing
+      ? 'Leaving the existing README.md untouched.'
+      : 'No README.md will be written.';
+  } else if (!has) {
+    show($('readme-empty'), true);
+    show($('readme-out'), false);
+    $('readme-empty').textContent =
+      'Nothing staged yet. Add files to see the generated README.';
+  } else {
+    show($('readme-empty'), false);
+    show($('readme-out'), true);
+    $('readme-out').textContent = existing
+      ? readme() + '\n\n' +
+        '[the rest of the existing README is kept exactly as it is]'
+      : readme();
+  }
+
+  // What was dropped on the way in.
+  const rootNote = $('root-note');
+  if (state.root && state.files.length) {
+    rootNote.innerHTML = (state.keepRoot
+      ? 'Keeping the folder: files land under <code>' + esc(state.root) + '/</code>.'
+      : 'Uploading the <strong>contents</strong> of <code>' + esc(state.root) +
+        '/</code> — the folder itself is not part of the path.') +
+      '<button class="btn-quiet" id="root-toggle">' +
+      (state.keepRoot ? 'Drop the folder' : 'Keep the folder') + '</button>';
+    show(rootNote, true);
+  } else {
+    show(rootNote, false);
+  }
+
+  const skipNote = $('skip-note');
+  if (state.skipped.length) {
+    skipNote.innerHTML = state.skipped.length + ' build artefact(s) skipped — ' +
+      esc(state.skipped.slice(0, 3).join(', ')) +
+      (state.skipped.length > 3 ? ', …' : '');
+    show(skipNote, true);
+  } else {
+    show(skipNote, false);
+  }
+
+  const secretNote = $('secret-note');
+  if (state.refused.length) {
+    secretNote.innerHTML = '<strong>Not staged — these look like secrets:</strong> ' +
+      esc(state.refused.join(', ')) + '. Remove them from the folder if you need them here.';
+    show(secretNote, true);
+  } else {
+    show(secretNote, false);
+  }
 
   $('tag-list').innerHTML = state.tags.map((t, i) =>
     '<span class="tag">' + esc(t) +
@@ -775,8 +963,11 @@ async function upload() {
     }
 
     progress(18);
-    const files = [{ path: 'README.md', content: new Blob([readme()], { type: 'text/markdown' }) }]
-      .concat(state.files.map((f) => ({ path: f.path, content: f.file })));
+    const files = state.files.map((f) => ({ path: f.path, content: f.file }));
+    if (willWriteReadme()) {
+      files.unshift({ path: 'README.md',
+                      content: new Blob([readme()], { type: 'text/markdown' }) });
+    }
     log('Uploading ' + files.length + ' file(s) via the commit API…');
 
     let seen = 0;
@@ -823,6 +1014,9 @@ async function upload() {
 
 function uploadAnother() {
   state.files = [];
+  state.root = '';
+  state.skipped = [];
+  state.refused = [];
   state.tags = [];
   state.logLines = [];
   $('f-repo').value = '';
@@ -960,7 +1154,22 @@ function wire() {
   on($('in-files'), 'change', (e) => { addFiles(e.target.files); e.target.value = ''; });
   on($('in-folder'), 'change', (e) => { addFiles(e.target.files); e.target.value = ''; });
   on($('example-btn'), 'click', exampleFiles);
-  on($('clear-files'), 'click', () => { state.files = []; refresh(); });
+  on($('clear-files'), 'click', () => {
+    state.files = [];
+    state.root = '';
+    state.skipped = [];
+    state.refused = [];
+    refresh();
+  });
+  on($('file-list'), 'click', () => {});
+  // The root-folder toggle is rebuilt on every refresh, so the listener lives on
+  // the note rather than the button.
+  on($('root-note'), 'click', (e) => {
+    if (!e.target.closest('#root-toggle')) return;
+    state.keepRoot = !state.keepRoot;
+    restage();
+  });
+  on($('f-write-readme'), 'change', refresh);
 
   const zone = $('dropzone');
   ['dragenter', 'dragover'].forEach((ev) => on(zone, ev, (e) => {

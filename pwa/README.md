@@ -142,6 +142,15 @@ and an upload needs the network regardless.
 - `sw.js` caches the shell one request at a time, not with `addAll()`: that call is
   atomic, so a single renamed file rejects the batch and leaves the app with no
   offline shell while looking fine. Keep `SHELL` in step with what is on disk.
+- **An existing README is never overwritten.** Writing one is a checkbox, off by
+  default when the repository has one; when it is on, `mergedReadme()` keeps every
+  front-matter key and the prose byte for byte and only refreshes `maintainers:`.
+  This exists because the app replaced a Space's README once, and for a Space that
+  file is configuration — title, emoji, sdk, sdk_version, app_file all went with it.
+- **Staging strips the picked folder's own name** (`hf_space/app.py` → `app.py`),
+  with a toggle to keep it, and filters build artefacts (`__pycache__`, `.pyc`,
+  `.DS_Store`, `node_modules`, …). Anything matching `SECRETS` — `.env`, `*.pem`,
+  `*.key`, `credentials.json` — is refused outright and said so in red.
 - Hub list entries put the `owner/name` path in **`name`**; `id` is an internal hex
   string, and the modified date is **`updatedAt`** (`lastModified` is only on
   single-repo lookups). Both cost a bug already.

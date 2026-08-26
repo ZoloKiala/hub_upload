@@ -255,6 +255,11 @@
           <h3 class="card-title">Repository card</h3>
           <p class="hint">Used to generate the README automatically.</p>
 
+          <label class="check-row" style="margin-bottom:10px">
+            <input type="checkbox" id="f-write-readme" checked>
+            <span id="readme-choice">Write README.md</span>
+          </label>
+
           <label class="lbl" for="f-desc">Short description</label>
           <textarea class="fld tall fld-gap" id="f-desc" rows="3"
                     placeholder="What is this repository for?"></textarea>
@@ -291,6 +296,13 @@
             <button class="btn-quiet" id="clear-files" hidden>Clear all</button>
           </div>
           <div class="empty" id="files-empty">Nothing staged yet. Add files to see checks and the generated README.</div>
+
+          <!-- What was dropped on the way in: the folder's own name, and anything
+               that has no business on the Hub. -->
+          <div class="staging-note" id="root-note" hidden></div>
+          <div class="staging-note" id="skip-note" hidden></div>
+          <div class="staging-note bad" id="secret-note" hidden></div>
+
           <div class="files" id="file-list"></div>
         </div>
 
@@ -435,11 +447,15 @@
         <li><strong>Large files go via git LFS automatically</strong> — anything over
           10 MB is marked <span class="tag-lfs">LFS</span> in the staged list. You do
           not have to configure anything, but those uploads take longer.</li>
-        <li><strong>A README.md is generated and committed with them.</strong> It
-          carries the licence, your tags and the Space SDK as front matter, then the
-          description, your name, and the list of files. If the repository already has
-          a README, this replaces it — copy anything worth keeping into the
-          description first.</li>
+        <li><strong>A README.md is generated for a new repository</strong> — the
+          licence, your tags and the Space SDK as front matter, then the description,
+          your name and the list of files.</li>
+        <li><strong>An existing README is never overwritten.</strong> Updating a
+          repository that already has one leaves it alone unless you tick
+          <em>Update README.md</em>, and even then only the <code>maintainers:</code>
+          line changes: every other front-matter key and every word of the text stays.
+          This matters most for a Space, where that file holds the title, emoji, SDK
+          and app file the Hub builds from.</li>
         <li><strong>Nothing else in the repository is touched.</strong> Updating adds
           or replaces the paths you staged; other files stay as they are.</li>
         <li><strong>The commit message</strong> is what you typed, or "Add files via
