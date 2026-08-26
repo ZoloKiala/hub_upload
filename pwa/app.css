@@ -306,13 +306,28 @@ select.fld { padding: 0.45rem 0.5rem; }
   align-items: center;
 }
 .brand-logo img { height: 17px; width: auto; display: block; }
+/* Institution, divider, then the app: its own mark and its name. The divider is
+   what keeps two marks from reading as one lockup. */
+.brand-app {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+}
+.brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: block;
+  flex: none;
+}
 .brand-name {
   color: var(--navy);
   font-weight: 400;
   font-size: 1rem;
   font-family: var(--serif);
-  padding-left: 10px;
-  border-left: 1px solid var(--line);
+  white-space: nowrap;
 }
 .brand-where { font-size: 0.75rem; color: var(--ink-2); white-space: nowrap; }
 
@@ -455,13 +470,16 @@ select.fld { padding: 0.45rem 0.5rem; }
   align-items: center;
   gap: 12px;
 }
-.hero-head img { height: 26px; width: auto; display: block; }
-.hero-head h1 {
-  font-size: 1.15rem;
-  color: #fff;
+.hero-wordmark { height: 26px; width: auto; display: block; }
+.hero-app {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding-left: 12px;
   border-left: 1px solid rgba(255, 255, 255, 0.28);
 }
+.hero-mark { width: 26px; height: 26px; border-radius: 7px; display: block; flex: none; }
+.hero-head h1 { font-size: 1.15rem; color: #fff; }
 .hero-body { padding: 1.6rem 1.75rem 1.75rem; }
 .hero-where { font-size: 0.78rem; color: var(--ink-3); }
 .rule { border: 0; border-top: 1px solid var(--line); margin: 18px 0; }
@@ -1115,7 +1133,8 @@ select.fld { padding: 0.45rem 0.5rem; }
 /* The app's name in the serif. The wordmark stays. */
 @media (max-width: 880px) {
   .brand-name { display: none; }
-  .brand { gap: 0; }
+  .brand-app { padding-left: 8px; }
+  .brand { gap: 8px; }
   .topbar { padding: 0.6rem 0.75rem 0.25rem; }
   .topbar-inner { gap: 0.6rem; padding: 0.35rem 0.6rem; }
   .tabs { margin-left: auto; }
@@ -1155,6 +1174,8 @@ select.fld { padding: 0.45rem 0.5rem; }
   .menu { right: 0.5rem; left: 0.5rem; min-width: 0; }
   .brand-logo { padding: 4px 7px; }
   .brand-logo img { height: 15px; }
+  .brand-mark { width: 20px; height: 20px; }
+  .hero-mark { width: 22px; height: 22px; }
   .theme-toggle button { width: 24px; height: 24px; }
   .icon-btn { padding: 0.15rem 0.2rem; }
   .searchbar { gap: 0.5rem; }

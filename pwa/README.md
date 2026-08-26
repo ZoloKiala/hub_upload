@@ -156,8 +156,11 @@ and an upload needs the network regardless.
   192, 512, a maskable 512 and a 32px favicon with headless Chrome; re-run it if the
   drawing changes. The maskable one drops the rounded tile and paints its colour
   full-bleed, because the launcher supplies the shape and a tile inside the crop
-  shows up as a stray outline. The wordmark in the bar stays IWMI's: a launcher tile
-  needs a square mark, a header needs the institute's name.
+  shows up as a stray outline.
+- The bar and the connect card read *institution, divider, app*: IWMI's wordmark,
+  then the app's own mark beside its name. The divider is what stops two marks
+  reading as one lockup. When the bar narrows the app's **name** goes and its mark
+  stays — at 22px it is the only thing left that says which app this is.
 
 ## What this replaces
 
