@@ -1535,6 +1535,9 @@ function boot() {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     });
   }
+
+  // Read by the guard in index.html: reaching here means every handler is attached.
+  window.__booted = true;
 }
 
 boot();

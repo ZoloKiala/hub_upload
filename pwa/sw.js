@@ -9,13 +9,13 @@
  * Cross-origin requests are left alone: the Hub client, the Hub API and GitHub
  * must never be answered from a cache.
  */
-const CACHE = 'hub-uploader-v3';
+const CACHE = 'hub-uploader-v4';
 
 const SHELL = [
   './',
   './index.html',
   './app.css',
-  './app.js',
+  './hub-uploader.js',
   './manifest.json',
   './assets/icons.svg',
   './assets/hub-uploader-icon.svg',

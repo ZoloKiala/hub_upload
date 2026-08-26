@@ -279,6 +279,43 @@ select.fld { padding: 0.45rem 0.5rem; }
 .seg button:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 
 /* ── the floating bar ────────────────────────────────────────────────────── */
+/* Shown only when the app failed to start. A rendered form whose buttons do nothing
+   is the worst failure mode there is: it looks like the app and behaves like a
+   photograph. */
+.boot-error {
+  padding: 14px 18px;
+  background: rgba(192, 57, 43, 0.08);
+  border-bottom: 1px solid rgba(192, 57, 43, 0.3);
+  color: var(--bad);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.boot-error strong { color: var(--bad); }
+.boot-error kbd {
+  font-family: var(--mono);
+  font-size: 0.78em;
+  border: 1px solid rgba(192, 57, 43, 0.35);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.boot-error button {
+  margin-left: auto;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--bad);
+  border: 1px solid var(--bad);
+  border-radius: var(--r-btn);
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+}
+.boot-error button:hover { filter: brightness(0.92); }
+
 .topbar { position: sticky; top: 0; z-index: 50; padding: 0.75rem 1rem 0.25rem; }
 .topbar-inner {
   background: var(--surface);

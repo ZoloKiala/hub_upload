@@ -30,6 +30,55 @@
 </head>
 <body>
 
+<!-- If the app cannot start, say so. A rendered form whose buttons do nothing is the
+     worst failure mode there is: it looks like the app and behaves like a photograph. -->
+<div class="boot-error" id="boot-error" hidden>
+  <strong>This app did not start.</strong>
+  <span id="boot-error-why"></span>
+  <span>Reload with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>
+    (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> on a Mac) — that clears a stale copy
+    held by the browser, which is the usual cause.</span>
+  <button type="button" id="boot-error-reload">Reload now</button>
+</div>
+
+<script>
+  /* Deliberately here and not in the app: this has to work when the app does not. */
+  (function () {
+    function tell(why) {
+      var box = document.getElementById('boot-error');
+      if (!box || !box.hidden) return;
+      var slot = document.getElementById('boot-error-why');
+      if (slot && why) slot.textContent = String(why);
+      box.hidden = false;
+      var button = document.getElementById('boot-error-reload');
+      if (button) {
+        button.onclick = function () {
+          // Drop the service worker's shell too, or a reload serves the same stale copy.
+          if (window.caches && caches.keys) {
+            caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+            }).catch(function () {}).then(function () { location.reload(true); });
+          } else {
+            location.reload(true);
+          }
+        };
+      }
+    }
+    window.addEventListener('error', function (e) {
+      tell(e && e.message ? e.message : 'A script failed to load.');
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      var why = e && e.reason && e.reason.message;
+      if (why) tell(why);
+    });
+    // The app sets __booted at the end of its own start-up. If it has not by now,
+    // something stopped it before any handler was attached.
+    setTimeout(function () {
+      if (!window.__booted) tell('The app script did not finish loading.');
+    }, 5000);
+  })();
+</script>
+
 <!-- ══ connect ═══════════════════════════════════════════════════════════════
      The design's connect card. One change from the prototype, and it is the
      reason this app needs no server: the token is the person's own, pasted once
@@ -672,6 +721,8 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="app.js"></script>
+<!-- Named so it cannot collide with a cached /app.js from the app that used to
+     live at this origin: same path, different program, dead buttons. -->
+<script src="hub-uploader.js"></script>
 </body>
 </html>
