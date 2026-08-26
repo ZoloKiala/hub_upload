@@ -30,7 +30,7 @@ ICONS = [
     "cloud-upload", "dash-lg", "database-fill", "display", "droplet-half",
     "moon-stars-fill",
     "exclamation-triangle-fill", "eye", "file-earmark", "gear-fill", "github",
-    "grid-3x3-gap-fill", "list", "lock-fill", "question-circle",
+    "grid-3x3-gap-fill", "journal-text", "list", "lock-fill", "question-circle",
     "rocket-takeoff-fill",
     "search", "square", "upload", "x", "x-circle-fill", "x-lg",
 ]

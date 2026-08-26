@@ -46,6 +46,7 @@ const state = {
   target: null,
   search: '',
   logLines: [],
+  issues: [],
   installEvent: null,
   lastRepo: null,
 };
@@ -265,8 +266,8 @@ function openModal(id) {
   show($(id), true);
 }
 function closeModals() {
-  ['modal-help', 'modal-settings', 'modal-install', 'modal-github', 'modal-upload']
-    .forEach((id) => show($(id), false));
+  ['modal-help', 'modal-settings', 'modal-install', 'modal-github', 'modal-upload',
+   'modal-log'].forEach((id) => show($(id), false));
 }
 
 /* ── destination ────────────────────────────────────────────────────────── */
@@ -526,8 +527,20 @@ function addFiles(fileList) {
   state.skipped = junk;
   state.refused = secrets;
 
+  if (junk.length) {
+    issue('info', junk.length + ' build artefact(s) not staged: ' +
+                  junk.slice(0, 4).join(', ') + (junk.length > 4 ? ', …' : ''));
+  }
+  if (secrets.length) {
+    issue('error', 'Refused as secrets, not staged: ' + secrets.join(', '));
+  }
+
   const root = commonRoot(keep.map((k) => k.base));
-  if (root) state.root = root;
+  if (root) {
+    state.root = root;
+    issue('warn', 'Staged the contents of ' + root + '/ — the folder itself is not ' +
+                  'part of the path. Use "Keep the folder" if that was wrong.');
+  }
 
   keep.forEach((k) => {
     state.files.push({
@@ -821,13 +834,28 @@ function refresh() {
 function renderHistory() {
   const rows = state.history;
   show($('history-empty'), !rows.length);
-  $('history-list').innerHTML = rows.map((h) =>
-    '<div class="row-card">' +
-    icon(h.type === 'dataset' ? 'database-fill' : h.type === 'space' ? 'rocket-takeoff-fill' : 'box-seam', 'ic-lead') +
-    '<div class="row-main"><a href="' + esc(h.url) + '" target="_blank" rel="noopener">' +
-    esc(h.repo) + '</a><div class="row-sub">' + esc(h.message) + ' · ' + h.files + ' file(s)</div></div>' +
-    '<span class="row-when">' + ago(h.time) + '</span>' +
-    '<span class="badge done">Complete</span></div>').join('');
+  $('history-list').innerHTML = rows.map((h, index) => {
+    const issues = h.issues || [];
+    const notable = issues.filter((i) => i.level !== 'info').length;
+    return '<div class="row-card' + (issues.length ? ' has-log' : '') +
+      '" data-row="' + index + '"' +
+      (issues.length ? ' title="Show what this upload did"' : '') + '>' +
+      icon(h.type === 'dataset' ? 'database-fill'
+           : h.type === 'space' ? 'rocket-takeoff-fill' : 'box-seam', 'ic-lead') +
+      '<div class="row-main"><a href="' + esc(h.url) + '" target="_blank" rel="noopener">' +
+      esc(h.repo) + '</a><div class="row-sub">' + esc(h.message) + ' · ' +
+      h.files + ' file(s)</div></div>' +
+      '<span class="row-when">' + ago(h.time) + '</span>' +
+      (notable ? '<span class="row-count">' + notable + ' to note</span>' : '') +
+      '<span class="badge done">Complete</span>' +
+      (issues.length
+        ? '<div class="row-open"><div class="issues" style="margin:0">' +
+          issues.map((i) => '<div class="issue ' + i.level + '">' +
+            icon(ISSUE_ICON[i.level] || 'file-earmark') + '<span>' + esc(i.text) +
+            '</span></div>').join('') + '</div></div>'
+        : '') +
+      '</div>';
+  }).join('');
 }
 
 async function loadProjects() {
@@ -909,6 +937,93 @@ function renderProjects() {
 }
 
 /* ── upload ─────────────────────────────────────────────────────────────── */
+/* Every decision worth questioning later. `level` is one of info, warn, error --
+ * the same three the pre-flight checks use, so the vocabulary does not change
+ * between before and after. */
+function issue(level, text) {
+  state.issues.push({ level: level, text: text });
+  log((level === 'info' ? '' : level.toUpperCase() + ': ') + text);
+  paintLogBadge();
+}
+
+// A grey tick beside "not staged" reads as a pass; a dash reads as what it is.
+const ISSUE_ICON = { info: 'dash-lg', warn: 'exclamation-triangle-fill',
+                     error: 'x-circle-fill' };
+
+function renderIssues(into, issues) {
+  const el = $(into);
+  if (!el) return;
+  if (!issues || !issues.length) { show(el, false); return; }
+  el.innerHTML = issues.map((i) =>
+    '<div class="issue ' + i.level + '">' + icon(ISSUE_ICON[i.level] || 'file-earmark') +
+    '<span>' + esc(i.text) + '</span></div>').join('');
+  show(el, true);
+}
+
+/** Anything a person should look at, as opposed to a note they can ignore. */
+function notableIssues() {
+  return state.issues.filter((i) => i.level !== 'info');
+}
+
+/** Mark the button when something worth reading has happened. */
+function paintLogBadge() {
+  const notable = notableIssues().length;
+  show($('log-dot'), notable > 0);
+  const menuDot = $('menu-log-dot');
+  if (menuDot) menuDot.style.visibility = notable ? 'visible' : 'hidden';
+  const button = $('log-btn');
+  if (button) {
+    button.title = notable
+      ? 'Activity log — ' + notable + ' thing(s) to note'
+      : 'Activity log';
+  }
+}
+
+function openLog() {
+  renderIssues('log-issues', state.issues);
+  show($('log-empty'), !state.issues.length && !state.logLines.length);
+  const transcript = $('log-transcript');
+  if (state.logLines.length) {
+    transcript.innerHTML = state.logLines.map((l) => '<div>' + esc(l) + '</div>').join('');
+    show(transcript, true);
+  } else {
+    show(transcript, false);
+  }
+  $('log-scope').textContent = state.lastRepo
+    ? 'The last upload was to ' + state.lastRepo.name + '.'
+    : 'What this app has done since you opened it.';
+  openModal('modal-log');
+}
+
+function clearLog() {
+  state.issues = [];
+  state.logLines = [];
+  paintLogBadge();
+  refresh();
+  openLog();
+  toast('Log cleared.');
+}
+
+/** The log as text, for pasting into a message to whoever can help. */
+function logText() {
+  const head = ['Hub uploader log',
+                'repo: ' + (state.lastRepo ? state.lastRepo.name : fullName() || '—'),
+                'by:   ' + (state.name || '—'),
+                'when: ' + new Date().toISOString(), ''];
+  const issues = state.issues.map((i) => '[' + i.level + '] ' + i.text);
+  return head.concat(issues, [''], ['transcript:'], state.logLines).join('\n');
+}
+
+async function copyLog() {
+  try {
+    await navigator.clipboard.writeText(logText());
+    toast('Log copied.');
+  } catch (e) {
+    // Clipboard blocked (an insecure origin, usually). Show it instead of failing.
+    window.prompt('Copy the log:', logText());
+  }
+}
+
 function log(line) {
   state.logLines.push(line);
   $('log-lines').innerHTML = state.logLines.map((l) => '<div>' + esc(l) + '</div>').join('');
@@ -936,10 +1051,31 @@ async function upload() {
   const commit = val('f-commit').trim() ||
     ('Add files via Hub uploader' + (state.name ? ' (' + state.name + ')' : ''));
 
+  // Staging issues are kept; the transcript starts fresh.
   state.logLines = [];
+  state.issues = state.issues.filter((i) => i.stage !== 'upload');
   uploadState('uploading');
   progress(4);
-  log('Preparing ' + (state.files.length + 1) + ' file(s)…');
+  log('Preparing ' + state.files.length + ' file(s)…');
+
+  const existing = existingReadme();
+  if (!willWriteReadme()) {
+    issue('info', existing ? 'Left the existing README.md untouched.'
+                           : 'No README.md was written.');
+  } else if (existing) {
+    issue('warn', 'Updated README.md front matter (maintainers); its text was kept.');
+  } else {
+    issue('info', 'Generated README.md.');
+  }
+  const big = state.files.filter((f) => f.isLarge);
+  if (big.length) {
+    issue('info', big.length + ' file(s) over 10 MB uploaded via git LFS.');
+  }
+  if (state.repoMode === 'update' && state.target && !state.target.mine &&
+      state.target.maintainers.length) {
+    issue('warn', 'Added to a repository maintained by ' +
+                  state.target.maintainers.join(', ') + '.');
+  }
 
   try {
     const h = await getHub();
@@ -994,20 +1130,24 @@ async function upload() {
     state.history.unshift({
       repo: name, url, type: state.repoType, message: commit,
       files: files.length, time: new Date().toISOString(),
+      issues: state.issues.slice(),
     });
     state.history = state.history.slice(0, 25);
     store(KEY.history, JSON.stringify(state.history));
 
     $('done-repo').textContent = name;
     $('done-link').href = url;
+    issue('info', 'Committed ' + files.length + ' file(s).');
+    renderIssues('done-issues', state.issues);
     uploadState('success');
     renderHistory();
     loadProjects();
   } catch (e) {
     const why = (e && e.message) ? e.message
       : 'The upload failed. Check your token and try again.';
-    log('Error: ' + why);
+    issue('error', why);
     $('fail-why').textContent = why;
+    renderIssues('fail-issues', state.issues);
     uploadState('failed');
   }
 }
@@ -1017,6 +1157,7 @@ function uploadAnother() {
   state.root = '';
   state.skipped = [];
   state.refused = [];
+  state.issues = [];
   state.tags = [];
   state.logLines = [];
   $('f-repo').value = '';
@@ -1119,6 +1260,10 @@ function wire() {
     if (watch.addEventListener) watch.addEventListener('change', react);
     else if (watch.addListener) watch.addListener(react);
   } catch (e) { /* older browser: the choice still works, it just will not follow */ }
+  on($('log-btn'), 'click', openLog);
+  on($('menu-log'), 'click', () => { toggleMenu(false); openLog(); });
+  on($('copy-log-3'), 'click', copyLog);
+  on($('clear-log'), 'click', clearLog);
   on($('help-btn'), 'click', () => openModal('modal-help'));
   on($('settings-btn'), 'click', () => openModal('modal-settings'));
   on($('github-btn'), 'click', () => { show($('github-error'), false); openModal('modal-github'); });
@@ -1159,6 +1304,7 @@ function wire() {
     state.root = '';
     state.skipped = [];
     state.refused = [];
+    state.issues = [];
     refresh();
   });
   on($('file-list'), 'click', () => {});
@@ -1225,6 +1371,14 @@ function wire() {
 
   on($('upload-btn'), 'click', upload);
   on($('again-btn'), 'click', uploadAnother);
+  on($('copy-log'), 'click', copyLog);
+  on($('copy-log-2'), 'click', copyLog);
+  on($('history-list'), 'click', (e) => {
+    const row = e.target.closest('.row-card.has-log');
+    // A link inside the row is still a link.
+    if (!row || e.target.closest('a')) return;
+    row.classList.toggle('is-open');
+  });
   on($('back-btn'), 'click', closeModals);
   on($('import-btn'), 'click', importGithub);
   on($('f-github'), 'keydown', (e) => { if (e.key === 'Enter') importGithub(); });
@@ -1256,6 +1410,7 @@ function wire() {
 function boot() {
   wire();
   paintTheme();
+  paintLogBadge();
 
   state.name = read(KEY.name) || '';
   $('f-name').value = state.name;

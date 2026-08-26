@@ -376,6 +376,9 @@ select.fld { padding: 0.45rem 0.5rem; }
   gap: 0.3rem;
 }
 .pill-btn:hover { border-color: var(--navy); color: var(--navy); }
+/* The label is a flex item now, so it can be squeezed into two lines even though the
+   button says nowrap. It may not shrink. */
+.pill-btn .label, .tabs button .label { white-space: nowrap; flex: none; }
 .pill-btn.is-ready {
   border-color: rgba(40, 83, 125, 0.4);
   background: rgba(40, 83, 125, 0.08);
@@ -951,6 +954,84 @@ select.fld { padding: 0.45rem 0.5rem; }
 .result-repo { font-size: 0.82rem; color: var(--navy-ink); font-family: var(--mono); margin-bottom: 18px; }
 .result-why { font-size: 0.8rem; color: var(--ink-2); margin-bottom: 18px; }
 .result-actions { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
+/* The issue list, in the result modal and inside a History row. */
+.issues {
+  text-align: left;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.issue {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--ink-body);
+}
+.issue .ic { margin-top: 0.2em; flex: none; }
+.issue.info .ic { color: var(--ink-3); }
+.issue.warn .ic { color: var(--warn); }
+.issue.error .ic { color: var(--bad); }
+.issue code { font-family: var(--mono); font-size: 0.95em; }
+
+/* History rows can be opened to show what that upload did. */
+.row-card.has-log { cursor: pointer; }
+.row-open {
+  display: none;
+  width: 100%;
+  border-top: 1px solid var(--line-soft);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.row-card.is-open .row-open { display: block; }
+.row-card.is-open { flex-wrap: wrap; }
+.row-count {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: rgba(221, 145, 3, 0.12);
+  color: var(--warn-ink);
+  white-space: nowrap;
+}
+
+/* A dot on the log button when there is something in it worth reading: a warning
+   or a failure. Notes alone do not earn it — the point is to be ignorable. */
+#log-btn { position: relative; }
+.log-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--warn);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+#menu-log-dot { color: var(--warn); }
+
+.log-transcript {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.log-transcript div {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .mini-log {
   text-align: left;
   background: var(--field);
@@ -1147,11 +1228,20 @@ select.fld { padding: 0.45rem 0.5rem; }
  * as accessible names, so a screen reader is unaffected by any of this.
  */
 
-/* The org line: the wordmark beside it already says IWMI, and the connect card
-   said IWMIHQ. */
-@media (max-width: 1080px) {
+/* Measured, not guessed. The bar cannot wrap, so each step has to remove at least
+   as much as the next width takes away: with everything on show it needs 1120px, so
+   the org line (160px) goes first -- the wordmark beside it already says IWMI, and
+   the connect card said IWMIHQ. */
+@media (max-width: 1160px) {
   .brand-where { display: none; }
   .topbar-inner { gap: 0.8rem; }
+}
+
+/* Then "Install app" becomes its icon (103px -> 26px), which carries the bar down
+   to where the app's name goes. */
+@media (max-width: 960px) {
+  #install-btn .label { display: none; }
+  #install-btn { padding: 0.3rem 0.55rem; }
 }
 
 /* The app's name in the serif. The wordmark stays. */
@@ -1172,6 +1262,7 @@ select.fld { padding: 0.45rem 0.5rem; }
 @media (max-width: 700px) {
   .topbar-inner > .tabs,
   .topbar-inner > #install-btn,
+  .topbar-inner > #log-btn,
   .topbar-inner > #help-btn,
   .topbar-inner > #settings-btn,
   .topbar-inner > .theme-toggle { display: none; }

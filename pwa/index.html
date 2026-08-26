@@ -115,6 +115,9 @@
           <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-moon-stars-fill"/></svg>
         </button>
       </div>
+      <button class="icon-btn" id="log-btn" title="Activity log" aria-label="Activity log">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-journal-text"/></svg>
+        <span class="log-dot" id="log-dot" hidden></span></button>
       <button class="icon-btn" id="help-btn" title="Help" aria-label="Help">
         <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-question-circle"/></svg></button>
       <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Settings">
@@ -157,6 +160,9 @@
       <button class="menu-item" id="menu-install">
         <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-display"/></svg>
         Install this app</button>
+      <button class="menu-item" id="menu-log">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-journal-text"/></svg>
+        Activity log<span class="menu-now" id="menu-log-dot" aria-hidden="true">●</span></button>
       <button class="menu-item" id="menu-help">
         <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-question-circle"/></svg>
         How to use this app</button>
@@ -383,9 +389,15 @@
         <div class="result-mark ok"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check-circle-fill"/></svg></div>
         <div class="result-title">Upload complete</div>
         <div class="result-repo" id="done-repo"></div>
+
+        <!-- What it did, beyond finishing: what was skipped, refused, renamed or
+             left alone. Reading this should remove any need to go and check. -->
+        <div class="issues" id="done-issues" hidden></div>
+
         <div class="result-actions">
           <a class="btn btn-primary" id="done-link" target="_blank" rel="noopener">View on Hub ↗</a>
           <button class="btn btn-ghost" id="again-btn">Upload another</button>
+          <button class="btn btn-ghost" id="copy-log">Copy log</button>
         </div>
       </div>
 
@@ -393,7 +405,11 @@
         <div class="result-mark bad"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-x-circle-fill"/></svg></div>
         <div class="result-title">Upload failed</div>
         <div class="result-why" id="fail-why"></div>
-        <button class="btn btn-ghost" id="back-btn">Back</button>
+        <div class="issues" id="fail-issues" hidden></div>
+        <div class="result-actions">
+          <button class="btn btn-ghost" id="back-btn">Back</button>
+          <button class="btn btn-ghost" id="copy-log-2">Copy log</button>
+        </div>
       </div>
     </div>
   </div>
@@ -469,6 +485,14 @@
         paths — enough for code and configuration, not for data. Public repositories
         only; it does not ask GitHub for a token.</p>
 
+      <div class="eyebrow">What it says it did</div>
+      <p>The <strong>activity log</strong> — the notebook icon in the bar — records every
+        decision worth questioning as it happens: files skipped or refused, a folder
+        prefix dropped, whether a README was written, merged or left alone, what went
+        via LFS. A dot appears when there is a warning or a failure in it, <em>Copy
+        log</em> puts it all on the clipboard, and each upload keeps its own list:
+        click a row in History to see what that one did.</p>
+
       <div class="eyebrow">After the upload</div>
       <ul>
         <li><strong>History</strong> lists what you uploaded <em>from this device</em>
@@ -542,6 +566,27 @@
       <hr class="rule" style="margin-top:0">
       <button class="btn btn-danger" id="signout-btn">Sign out</button>
       <p class="hint" style="margin-top:8px">Signing out removes the token from this browser.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ activity log ══════════════════════════════════════════════════════ -->
+<div class="scrim" id="modal-log" hidden>
+  <div class="modal lg" role="dialog" aria-modal="true" aria-labelledby="log-title">
+    <div class="modal-head">
+      <h5 id="log-title">Activity log</h5>
+      <button class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="hint" id="log-scope">What this app has done since you opened it.</p>
+      <div class="issues" id="log-issues" hidden></div>
+      <div class="empty" id="log-empty">Nothing yet. Staging files and uploading both
+        write here.</div>
+      <div class="log-transcript" id="log-transcript" hidden></div>
+      <div class="result-actions" style="justify-content:flex-start;margin-top:14px">
+        <button class="btn btn-ghost" id="copy-log-3">Copy log</button>
+        <button class="btn btn-ghost" id="clear-log">Clear</button>
+      </div>
     </div>
   </div>
 </div>

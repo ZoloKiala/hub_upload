@@ -56,8 +56,10 @@ it so the browser's own chrome matches.
 
 ## At different sizes
 
-The top bar never wraps. It drops the `IWMIHQ · Hugging Face Hub` line at 1080px and
-the app's name at 880px, and at **700px the whole rail collapses into a menu** —
+The top bar never wraps, and its breakpoints are measured rather than guessed: with
+everything on show it needs 1120px, so the `IWMIHQ · Hugging Face Hub` line (160px)
+goes at 1160px, the *Install app* label (103px → 26px) at 960px, and the app's name at
+880px. At **700px the whole rail collapses into a menu** —
 sections, Install, Help, Settings and the appearance toggle, each with its name back,
 which three unlabelled icons could not give them. The menu marks the section you are
 in, closes on Escape or a click outside, and keeps its appearance toggle in step with
@@ -65,6 +67,19 @@ the one in the bar.
 
 Below 900px the two-column upload view stacks; below 620px *tall* the file, README
 and log panels give up their fixed heights so a short window scrolls as one page.
+
+## The activity log
+
+Every decision worth questioning is logged as an issue — a note, a warning or a
+failure — as it happens: artefacts skipped, secrets refused, a folder prefix dropped,
+a README written, merged or left alone, files sent via LFS, a repository someone else
+maintains. The button beside Help opens the log (with a dot when there is a warning or
+worse in it), *Copy log* puts the lot on the clipboard with the repository, the person
+and the time at the top, and each upload's issues are kept with its History row —
+click a row to open it.
+
+This exists because three real defects were found by opening the Hub and reading a
+README. The app knew all three at the time and said none of them.
 
 ## Whose repository is it
 
