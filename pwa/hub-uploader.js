@@ -632,6 +632,24 @@ function checks() {
   out.push(big.length ? warn(big.length + ' file(s) will upload via git LFS')
                       : pass('No files require git LFS'));
 
+  // A Space that cannot build is worse than one that was never created, so the
+  // entry point its SDK needs is checked here rather than discovered on the Hub.
+  if (state.repoType === 'space') {
+    const sdk = val('f-sdk');
+    const spec = SPACE_ENTRY[sdk] || SPACE_ENTRY.gradio;
+    const entry = spaceEntry();
+    if (entry) {
+      out.push(pass('Space entry point — ' + entry));
+    } else if (state.files.length) {
+      out.push(fail('This ' + sdk + ' Space needs ' + spec.wants + ' — none staged'));
+    }
+    if (state.repoMode === 'update' && existingReadme() &&
+        !/^sdk:/m.test(existingReadme())) {
+      out.push(warn('This Space has no configuration in its README — it will not ' +
+                    'build until one is added'));
+    }
+  }
+
   const existing = existingReadme();
   if (!willWriteReadme()) {
     out.push(pass(existing ? 'Existing README.md left untouched'
@@ -713,6 +731,40 @@ function mergedReadme(existing) {
          existing.slice(front[0].length);
 }
 
+/* What each SDK needs at the root of the repository. The Hub decides whether a Space
+ * builds from these, so the app should be the one to notice they are missing. */
+const SPACE_ENTRY = {
+  gradio: { field: 'app_file', names: ['app.py', 'main.py', 'gradio_app.py'],
+            wants: 'a Python entry point (app.py)' },
+  streamlit: { field: 'app_file', names: ['streamlit_app.py', 'app.py', 'main.py'],
+               wants: 'a Python entry point (streamlit_app.py or app.py)' },
+  static: { field: null, names: ['index.html'], wants: 'index.html at the root' },
+  docker: { field: null, names: ['Dockerfile'], wants: 'a Dockerfile at the root' },
+};
+
+/** The staged file that serves as the Space's entry point, if one was staged. Root
+ *  level only: the Hub does not look in subdirectories for it. */
+function spaceEntry() {
+  const spec = SPACE_ENTRY[val('f-sdk')] || SPACE_ENTRY.gradio;
+  const root = state.files.map((f) => f.path).filter((p) => p.indexOf('/') === -1);
+  for (const name of spec.names) {
+    if (root.indexOf(name) !== -1) return name;
+  }
+  // Any single root-level .py is a better guess than nothing for the Python SDKs.
+  if (spec.field === 'app_file') {
+    const py = root.filter((p) => /\.py$/.test(p));
+    if (py.length === 1) return py[0];
+  }
+  return '';
+}
+
+/** Title from the repository name: "yield_forest_test" reads better as
+ *  "Yield forest test" on a Space card, and the Hub shows this verbatim. */
+function spaceTitle(name) {
+  const words = String(name || 'Untitled').replace(/[-_]+/g, ' ').trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 function readme() {
   const existing = existingReadme();
   if (existing) return mergedReadme(existing);
@@ -723,7 +775,23 @@ function readme() {
     if (license) front += 'license: ' + license + '\n';
   }
   if (state.tags.length) front += 'tags:\n' + state.tags.map((t) => '  - ' + t).join('\n') + '\n';
-  if (state.repoType === 'space') front += 'sdk: ' + val('f-sdk') + '\n';
+
+  // A Space is configured by this block. Missing any of it and the Hub answers
+  // "Configuration error -- Missing configuration in README" instead of building.
+  if (state.repoType === 'space') {
+    const sdk = val('f-sdk');
+    const spec = SPACE_ENTRY[sdk] || SPACE_ENTRY.gradio;
+    front += 'title: ' + spaceTitle(name) + '\n';
+    front += 'emoji: 💧\n';
+    front += 'colorFrom: blue\n';
+    front += 'colorTo: green\n';
+    front += 'sdk: ' + sdk + '\n';
+    if (spec.field) {
+      const entry = spaceEntry();
+      if (entry) front += spec.field + ': ' + entry + '\n';
+    }
+    front += 'pinned: false\n';
+  }
   // Who to ask about this repository, kept in the repository itself. Existing
   // maintainers are never dropped -- adding files does not take a repository over.
   const maintainers = maintainerList();
@@ -1146,6 +1214,10 @@ async function upload() {
                            : 'No README.md was written.');
   } else if (existing) {
     issue('warn', 'Updated README.md front matter (maintainers); its text was kept.');
+  } else if (state.repoType === 'space') {
+    const entry = spaceEntry();
+    issue('info', 'Generated README.md with the Space configuration (' + val('f-sdk') +
+                  (entry ? ', ' + entry : '') + ').');
   } else {
     issue('info', 'Generated README.md.');
   }
