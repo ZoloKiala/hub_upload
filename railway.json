@@ -1,8 +1,11 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
-  "build": { "builder": "NIXPACKS" },
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "_comment_startCommand": "Serves pwa/ as a static site: the app is files only, so nothing here holds a token or a session. serve_pwa.py exists rather than `python -m http.server` for two reasons -- correct MIME types for .woff2 and the manifest, and cache headers that let a deploy reach people who already have the app open. The previous command, `uvicorn backend:app`, still runs the Python/Electron generation if you point a service at it.",
   "deploy": {
-    "startCommand": "uvicorn backend:app --host 0.0.0.0 --port $PORT",
+    "startCommand": "python serve_pwa.py",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }

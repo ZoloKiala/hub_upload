@@ -1,9 +1,40 @@
-# IWMI Hub Uploader — working app
+# IWMI Hub Uploader
 
-Upload models, datasets and Spaces to the **IWMIHQ** Hugging Face organization in a few clicks.
-Built with Python + Gradio + `huggingface_hub` (the stack recommended in the design handoff).
+Upload models, datasets and Spaces to the **IWMIHQ** organization on the Hugging Face
+Hub. Two generations of the same tool live here.
 
-## Setup
+## The app: `pwa/`
+
+A static, installable web app — no Python, no Node, no server. Each person signs in
+with **their own** Hugging Face write token, which stays in their browser, so there is
+no shared secret to protect and nothing to deploy but files. It installs to a desktop
+or a phone, and everything up to the upload works offline.
+
+```bash
+python serve_pwa.py            # http://127.0.0.1:8099
+```
+
+That is also what the hosted deployment runs (`railway.json`), so the URL serves the
+PWA. Nothing needs `HF_TOKEN`, and no `ACCESS_CODE` is needed to guard one: a visitor
+without their own token sees the connect screen and nothing else.
+
+See **[`pwa/README.md`](pwa/README.md)** for how it is built, what it talks to, the
+rules it follows about other people's repositories, and the notes worth reading before
+editing it.
+
+## The previous generation: Python, Electron, Tauri
+
+`app.py` (Gradio), `backend.py` (FastAPI + `huggingface_hub`), `electron/` (a desktop
+window over that backend), `src-tauri/` (an alternative shell), and the PyInstaller and
+NSIS steps that turn them into a Windows installer. This is the stack the design
+handoff recommended, and it works; it exists to provide a window, an icon and a
+server-side token, all three of which the PWA handles by itself.
+
+It is kept because it is still deployable and still under change — the sections below
+document it in full. If you deploy it, note that it uploads with **one shared team
+token**, which is why it has an `ACCESS_CODE` and the PWA does not.
+
+## Setup (previous generation)
 
 1. Python 3.10+
 2. Install dependencies:
@@ -122,8 +153,13 @@ it in the browser (Option A above).
 
 ### Deploy the web version to Railway
 
-The repo is Railway-ready (`railway.json`). In Railway: **New Project → Deploy
-from GitHub repo → `ZoloKiala/hub_upload`**, then set service **Variables**:
+> **Note.** `railway.json` now starts `python serve_pwa.py`, which serves the PWA. To
+> host *this* generation instead, set the service's start command back to
+> `uvicorn backend:app --host 0.0.0.0 --port $PORT` — the variables below apply to
+> that, not to the PWA.
+
+In Railway: **New Project → Deploy from GitHub repo → `ZoloKiala/hub_upload`**, then
+set service **Variables**:
 
 | Variable | Purpose |
 |---|---|
