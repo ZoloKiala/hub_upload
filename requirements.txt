@@ -1,6 +1,6 @@
-gradio>=4.44
-huggingface_hub>=0.26
-python-dotenv>=1.0
-fastapi>=0.115
-uvicorn>=0.30
-python-multipart>=0.0.9
+# Intentionally empty.
+#
+# The app in pwa/ is static files, and serve_pwa.py uses only the standard
+# library. This file stays so Nixpacks recognises a Python project and provides
+# an interpreter for the start command in railway.json; adding a dependency here
+# would mean the app had stopped being static.

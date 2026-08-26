@@ -1,178 +1,55 @@
 # IWMI Hub Uploader
 
 Upload models, datasets and Spaces to the **IWMIHQ** organization on the Hugging Face
-Hub. Two generations of the same tool live here.
-
-## The app: `pwa/`
-
-A static, installable web app — no Python, no Node, no server. Each person signs in
-with **their own** Hugging Face write token, which stays in their browser, so there is
-no shared secret to protect and nothing to deploy but files. It installs to a desktop
-or a phone, and everything up to the upload works offline.
+Hub. A static, installable web app: no Python at runtime, no Node, no server.
 
 ```bash
 python serve_pwa.py            # http://127.0.0.1:8099
 ```
 
-That is also what the hosted deployment runs (`railway.json`), so the URL serves the
-PWA. Nothing needs `HF_TOKEN`, and no `ACCESS_CODE` is needed to guard one: a visitor
-without their own token sees the connect screen and nothing else.
+That is also what the hosted deployment runs, so the URL serves the app itself.
 
-See **[`pwa/README.md`](pwa/README.md)** for how it is built, what it talks to, the
-rules it follows about other people's repositories, and the notes worth reading before
-editing it.
+## How it works
 
-## The previous generation: Python, Electron, Tauri
+Each person signs in with **their own** Hugging Face write token, pasted once and kept
+in their browser. Nothing secret lives on the server — there is no server — and the Hub
+records who actually committed. Everything up to the upload works offline: staging
+files, the pre-flight checks, the generated README. Only the upload needs the network.
 
-`app.py` (Gradio), `backend.py` (FastAPI + `huggingface_hub`), `electron/` (a desktop
-window over that backend), `src-tauri/` (an alternative shell), and the PyInstaller and
-NSIS steps that turn them into a Windows installer. This is the stack the design
-handoff recommended, and it works; it exists to provide a window, an icon and a
-server-side token, all three of which the PWA handles by itself.
+Install it from the browser (the install icon in the address bar on Chrome or Edge,
+Share → Add to Dock on Safari) and it opens in its own window.
 
-It is kept because it is still deployable and still under change — the sections below
-document it in full. If you deploy it, note that it uploads with **one shared team
-token**, which is why it has an `ACCESS_CODE` and the PWA does not.
+## Layout
 
-## Setup (previous generation)
+| Path | What it is |
+| --- | --- |
+| [`pwa/`](pwa/) | the app — see [`pwa/README.md`](pwa/README.md) |
+| [`serve_pwa.py`](serve_pwa.py) | the static server: correct MIME types, sane cache headers |
+| [`railway.json`](railway.json) | the hosted deployment, which runs the above |
+| `requirements.txt` | empty on purpose; it only tells Nixpacks this is a Python project |
 
-1. Python 3.10+
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Create the team token ONCE (admin only): log in as the `IWMI-huggingface`
-   service account → Settings → Access Tokens → New token (write scope).
-4. Put it in the environment (never in code, never in git):
-   ```bash
-   cp .env.example .env      # then paste the token into .env
-   ```
+Read [`pwa/README.md`](pwa/README.md) before editing the app. It covers the token
+model, what the app talks to, the rules it follows about other people's repositories,
+and the traps already paid for once — `cache.addAll()` being atomic, Hub list entries
+keeping the repository path in `name` rather than `id`, and why an existing README is
+never overwritten.
 
-## Run
+## Deploy it
 
-```bash
-python app.py
-```
+Any static host will do. On Railway the repo is ready as it stands: `railway.json`
+starts `serve_pwa.py`. There is no `HF_TOKEN` to set and no `ACCESS_CODE` needed to
+protect one — a visitor without their own token sees the connect screen and nothing
+else. If either variable is still set on the service from an earlier deployment, remove
+it, and revoke the shared token it held.
 
-Open http://127.0.0.1:7860. Enter your name (recorded in every commit message),
-pick a repo type, create or update a repo, add files, upload.
+## The previous generation
 
-## Deploy for the whole team
+This repository used to hold a Python + Gradio app, a FastAPI backend, an Electron
+window and a Tauri scaffold, packaged into a Windows installer. All of it existed to
+provide a window, an icon and a server-side token — the three things the PWA handles by
+itself — and it uploaded with one shared team token, which is why it needed an access
+code and this does not.
 
-Option A — host as a private Space in IWMIHQ itself: create a Gradio Space,
-upload `app.py` + `requirements.txt`, and set `HF_TOKEN` as a **Space secret**.
-Everyone uses it in the browser with zero setup.
-
-Option B — desktop window (pure Python): `pip install pywebview && python desktop.py`.
-
-Option C — distributable desktop installer: Tauri scaffold in `src-tauri/`
-(see `src-tauri/README.md`).
-
-Option D — **Electron desktop app** (`electron/`): a native window that
-recreates the high-fidelity design pixel-for-pixel (not the generic Gradio
-form). It runs a small FastAPI backend (`backend.py`) that wraps the same
-`huggingface_hub` logic. See `electron/README.md`.
-
-## Electron app (recommended desktop build)
-
-```bash
-pip install -r requirements.txt          # backend deps (adds fastapi/uvicorn — already pulled by gradio)
-cd electron && npm install               # one-time: downloads Electron
-```
-
-Run it:
-
-```bash
-cd electron
-run.cmd            # Windows — clears ELECTRON_RUN_AS_NODE, then starts Electron
-# or, if that env var is not set in your shell:  npm start
-```
-
-> **Gotcha:** if `ELECTRON_RUN_AS_NODE=1` is set in your environment (some IDEs /
-> Electron-based tools set it globally), Electron launches as plain Node and the
-> window never appears (`TypeError: Cannot read properties of undefined (reading 'handle')`).
-> `run.cmd` clears it. Setting it to `0` or `""` is NOT enough — it must be unset.
-
-`main.js` spawns `backend.py` on `127.0.0.1:8765` and opens the frameless window;
-closing the window stops the backend.
-
-## Package as a Windows installer (.exe)
-
-The app ships as an NSIS installer. Because the backend is Python, it is first
-compiled to a standalone `hub-backend.exe` (PyInstaller) and bundled into the
-Electron app; the target machine needs **neither Python nor Node**.
-
-```bash
-pip install pyinstaller
-# 1. compile the backend to dist-backend/hub-backend.exe
-py -3 -m PyInstaller --noconfirm --onefile --name hub-backend \
-  --distpath dist-backend --workpath build-backend \
-  --collect-all uvicorn --collect-all fastapi --collect-all starlette \
-  --collect-all anyio --collect-all huggingface_hub --collect-all pydantic \
-  --collect-all pydantic_core --collect-all multipart --collect-all dotenv \
-  backend.py
-# 2. build the installer (electron-builder), output in dist-app/
-cd electron
-npm install                     # one-time
-npm run dist
-```
-
-Result: `dist-app/IWMI Hub Uploader Setup <version>.exe`. Installing it registers
-a proper uninstaller (so the ⋮ → **Uninstall app** entry works in Apps & features)
-and creates Start-menu / desktop shortcuts. `main.js` runs the bundled
-`hub-backend.exe` (from `process.resourcesPath`) when packaged, and `py -3
-backend.py` in dev.
-
-> **Token in the packaged app.** The shared `HF_TOKEN` is **not** embedded in the
-> installer (anyone could extract it). The bundled backend reads `HF_TOKEN` from a
-> `.env` next to it — `…\resources\.env` in the install directory — or from the
-> environment. Until an admin sets it, the app runs but shows *token not set* and
-> uploads fail. Decide a distribution method before handing the exe out (per-user
-> setup, an MDM-pushed `.env`, or move to per-user HF login).
-
-Deployments are logged to `%APPDATA%\IWMI Hub Uploader\deployments.jsonl` and shown
-in the app's **History** tab; each successful upload also prints its Hub link to the
-backend console.
-
-## Web version (same UI, in a browser)
-
-The exact same UI also runs as a plain web app — `backend.py` serves the
-`electron/renderer/` files as a static site, and a browser shim
-(`web-api.js`) replaces the Electron bridge (file pickers upload bytes to
-`/api/stage` since browsers can't hand over local paths; the window chrome is
-hidden).
-
-```bash
-pip install -r requirements.txt
-py -3 backend.py            # then open http://127.0.0.1:8765 in a browser
-```
-
-For the whole team with zero install, deploy it as a private **Gradio/Docker
-Space** in IWMIHQ (or any host) and set `HF_TOKEN` as a secret — everyone uses
-it in the browser (Option A above).
-
-### Deploy the web version to Railway
-
-> **Note.** `railway.json` now starts `python serve_pwa.py`, which serves the PWA. To
-> host *this* generation instead, set the service's start command back to
-> `uvicorn backend:app --host 0.0.0.0 --port $PORT` — the variables below apply to
-> that, not to the PWA.
-
-In Railway: **New Project → Deploy from GitHub repo → `ZoloKiala/hub_upload`**, then
-set service **Variables**:
-
-| Variable | Purpose |
-|---|---|
-| `HF_TOKEN` | team write token — **required** for uploads |
-| `ACCESS_CODE` | if set, the whole app sits behind an HTTP Basic prompt (password = this code). **Strongly recommended for any public URL**, because uploads use the shared token and there is no passphrase. |
-| `HF_ORG` | optional; defaults to `IWMIHQ` |
-
-Then **Settings → Networking → Generate Domain**. Nixpacks installs
-`requirements.txt` and runs `uvicorn backend:app --host 0.0.0.0 --port $PORT`.
-Note: the deployment log is on ephemeral disk (resets on redeploy) unless you
-attach a Railway **Volume**.
-
-## Security
-
-- `HF_TOKEN` lives only in `.env` (gitignored) or a Space secret.
-- If a token is ever pasted in chat/screenshots, revoke it and make a new one.
+It is not gone, only not here: branch **`legacy-python-electron`**, tagged
+**`legacy-v0.1.0`**, holds its last state, including the in-progress "Explain this
+error" helper. Work from that branch to run or deploy it.

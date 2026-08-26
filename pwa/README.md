@@ -203,9 +203,9 @@ and an upload needs the network regardless.
   reading as one lockup. When the bar narrows the app's **name** goes and its mark
   stays — at 22px it is the only thing left that says which app this is.
 
-## What this replaces
+## What this replaced
 
-The Electron shell, `backend.py`, the PyInstaller step and the NSIS installer all exist
-to do what a PWA does by itself — a window, an icon, and a token kept out of the client.
-Nothing here needs them. Retire them once this is deployed and people have installed it;
-until then they are untouched.
+An Electron shell, `backend.py`, a PyInstaller step and an NSIS installer, all to
+provide a window, an icon and a server-side token — the three things this handles by
+itself. They are no longer in `main`: branch `legacy-python-electron`, tagged
+`legacy-v0.1.0`, holds their last state.
