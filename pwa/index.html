@@ -163,6 +163,9 @@
       <button class="menu-item" id="menu-log">
         <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-journal-text"/></svg>
         Activity log<span class="menu-now" id="menu-log-dot" aria-hidden="true">●</span></button>
+      <button class="menu-item" id="menu-report">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-bug-fill"/></svg>
+        Report a problem</button>
       <button class="menu-item" id="menu-help">
         <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-question-circle"/></svg>
         How to use this app</button>
@@ -506,6 +509,13 @@
           usually still processing.</li>
       </ul>
 
+      <div class="eyebrow">Telling somebody</div>
+      <p><strong>Report a problem</strong> — in the activity log, the menu, or Settings —
+        writes the report for you: what you describe, plus the log and a few details
+        about this browser, with any access token stripped out. It then opens either a
+        GitHub issue or an email, already filled in, for you to send. The app posts
+        nothing by itself.</p>
+
       <div class="eyebrow">When something goes wrong</div>
       <ul>
         <li><strong>"That token is read-only."</strong> Make a new token with the
@@ -561,7 +571,8 @@
       <p class="hint tight">Recorded in every commit message.</p>
       <button class="btn btn-primary" id="save-settings" style="margin-bottom:18px">Save</button>
 
-      <button class="btn btn-ghost" id="install-btn-2" style="margin-bottom:18px">Install this app</button>
+      <button class="btn btn-ghost" id="install-btn-2" style="margin-bottom:10px">Install this app</button>
+      <button class="btn btn-ghost" id="report-btn-2" style="margin-bottom:18px">Report a problem</button>
 
       <hr class="rule" style="margin-top:0">
       <button class="btn btn-danger" id="signout-btn">Sign out</button>
@@ -584,8 +595,48 @@
         write here.</div>
       <div class="log-transcript" id="log-transcript" hidden></div>
       <div class="result-actions" style="justify-content:flex-start;margin-top:14px">
+        <button class="btn btn-primary" id="report-from-log">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-bug-fill"/></svg>
+          Report a problem</button>
         <button class="btn btn-ghost" id="copy-log-3">Copy log</button>
         <button class="btn btn-ghost" id="clear-log">Clear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ report a problem ══════════════════════════════════════════════════ -->
+<div class="scrim" id="modal-report" hidden>
+  <div class="modal lg" role="dialog" aria-modal="true" aria-labelledby="report-title">
+    <div class="modal-head">
+      <h5 id="report-title">Report a problem</h5>
+      <button class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <label class="lbl" for="f-report">What happened?</label>
+      <textarea class="fld tall" id="f-report" rows="4"
+                placeholder="What you were doing, what you expected, and what happened instead."></textarea>
+
+      <label class="check-row" style="margin:10px 0 0">
+        <input type="checkbox" id="f-report-log" checked>
+        <span>Attach the activity log and browser details</span>
+      </label>
+      <p class="hint">Nothing is sent from here — both buttons open a draft you send
+        yourself. Anything that looks like an access token is removed first.</p>
+
+      <details class="report-preview">
+        <summary>See exactly what will be included</summary>
+        <pre id="report-preview"></pre>
+      </details>
+
+      <div class="result-actions" style="justify-content:flex-start;margin-top:14px">
+        <a class="btn btn-primary" id="report-github" target="_blank" rel="noopener">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-github"/></svg>
+          Open a GitHub issue</a>
+        <a class="btn btn-ghost" id="report-email">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-envelope-fill"/></svg>
+          Send by email</a>
+        <button class="btn btn-ghost" id="report-copy">Copy</button>
       </div>
     </div>
   </div>

@@ -1014,6 +1014,29 @@ select.fld { padding: 0.45rem 0.5rem; }
 }
 #menu-log-dot { color: var(--warn); }
 
+.report-preview { margin-top: 12px; }
+.report-preview summary {
+  font-size: 0.76rem;
+  color: var(--navy-ink);
+  cursor: pointer;
+}
+.report-preview summary:hover { color: var(--navy-deep); }
+.report-preview pre {
+  margin: 8px 0 0;
+  max-height: 200px;
+  overflow: auto;
+  background: var(--surface-wash);
+  border: 1px solid var(--line);
+  border-radius: var(--r-field);
+  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .log-transcript {
   margin-top: 14px;
   padding-top: 12px;

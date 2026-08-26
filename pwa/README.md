@@ -81,6 +81,19 @@ click a row to open it.
 This exists because three real defects were found by opening the Hub and reading a
 README. The app knew all three at the time and said none of them.
 
+**Reporting a problem** is the other half: the button in the log panel (also in the
+menu and in Settings) opens a draft with the description, a context table — app mode,
+appearance, target, staged count, window size, user agent — and the log, then offers
+two ways to send it: a prefilled issue on
+[ZoloKiala/hub_upload](https://github.com/ZoloKiala/hub_upload/issues) or an email to
+the maintainer. Nothing is posted by the app, which is what keeps it backendless: both
+buttons open a draft the person sends themselves. `ISSUES_URL` and `CONTACT_EMAIL` at
+the top of `app.js` are where those go.
+
+Everything in a report passes through `scrub()`, which replaces anything shaped like
+`hf_…` with `hf_[removed]`. The app never logs a token, but a Hub error message is not
+ours to vouch for and a report is by definition going somewhere public.
+
 ## Whose repository is it
 
 The Hub has no per-repository owner inside an organization: everything in IWMIHQ

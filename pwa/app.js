@@ -22,6 +22,12 @@
 'use strict';
 
 const HUB_ESM = 'https://cdn.jsdelivr.net/npm/@huggingface/hub@2.15.0/+esm';
+// Where a problem goes. Two routes because not everybody here is on GitHub.
+const ISSUES_URL = 'https://github.com/ZoloKiala/hub_upload/issues/new';
+const CONTACT_EMAIL = 'z.kiala@cgiar.org';
+// A GitHub issue arrives as a URL, and a URL that is too long is silently truncated
+// by the browser rather than by us.
+const REPORT_LIMIT = 5500;
 const ORG = 'IWMIHQ';
 const LFS_BYTES = 10 * 1024 * 1024;
 const KEY = { token: 'hu_token', name: 'hu_name', history: 'hu_history',
@@ -267,7 +273,7 @@ function openModal(id) {
 }
 function closeModals() {
   ['modal-help', 'modal-settings', 'modal-install', 'modal-github', 'modal-upload',
-   'modal-log'].forEach((id) => show($(id), false));
+   'modal-log', 'modal-report'].forEach((id) => show($(id), false));
 }
 
 /* ── destination ────────────────────────────────────────────────────────── */
@@ -1004,6 +1010,74 @@ function clearLog() {
   toast('Log cleared.');
 }
 
+/** Strip anything shaped like an access token. A report is going somewhere public,
+ *  and while the app never logs the token itself, a Hub error message is not ours to
+ *  vouch for. */
+function scrub(text) {
+  return String(text).replace(/\bhf_[A-Za-z0-9]{6,}/g, 'hf_[removed]');
+}
+
+/** What the report will say, so the person can read it before it goes. */
+function reportBody() {
+  const said = val('f-report').trim();
+  const parts = ['### What happened', '', said || '_(not described)_', ''];
+
+  if ($('f-report-log') && $('f-report-log').checked) {
+    parts.push('### Context', '');
+    parts.push('| | |', '| --- | --- |');
+    parts.push('| app | Hub uploader v1.0.0 (' +
+               (isStandalone() ? 'installed' : 'in browser') + ') |');
+    parts.push('| appearance | ' + activeTheme() +
+               (chosenTheme() ? '' : ' (from the system)') + ' |');
+    parts.push('| target | ' + (fullName() || state.repoMode + ', none chosen') + ' |');
+    parts.push('| staged | ' + state.files.length + ' file(s)' +
+               (state.root ? ' from ' + state.root + '/' : '') + ' |');
+    parts.push('| window | ' + window.innerWidth + '×' + window.innerHeight + ' |');
+    parts.push('| browser | ' + (navigator.userAgent || '—') + ' |');
+    parts.push('');
+
+    if (state.issues.length) {
+      parts.push('### What the app reported', '');
+      state.issues.forEach((i) => parts.push('- **' + i.level + '** ' + i.text));
+      parts.push('');
+    }
+    if (state.logLines.length) {
+      parts.push('### Log', '', '```', ...state.logLines, '```', '');
+    }
+  }
+
+  let body = scrub(parts.join('\n'));
+  if (body.length > REPORT_LIMIT) {
+    body = body.slice(0, REPORT_LIMIT) +
+           '\n\n_(cut here — the full log is on the reporter\'s clipboard if needed)_\n';
+  }
+  return body;
+}
+
+function reportTitle() {
+  const said = val('f-report').trim().split('\n')[0];
+  const where = state.lastRepo ? ' (' + state.lastRepo.name + ')' : '';
+  return 'Hub uploader: ' + (said ? said.slice(0, 70) : 'a problem') + where;
+}
+
+function refreshReport() {
+  const body = reportBody();
+  $('report-preview').textContent = body;
+  $('report-github').href = ISSUES_URL +
+    '?labels=bug&title=' + encodeURIComponent(reportTitle()) +
+    '&body=' + encodeURIComponent(body);
+  $('report-email').href = 'mailto:' + CONTACT_EMAIL +
+    '?subject=' + encodeURIComponent(reportTitle()) +
+    '&body=' + encodeURIComponent(body);
+}
+
+function openReport() {
+  refreshReport();
+  openModal('modal-report');
+  const box = $('f-report');
+  if (box) box.focus();
+}
+
 /** The log as text, for pasting into a message to whoever can help. */
 function logText() {
   const head = ['Hub uploader log',
@@ -1261,6 +1335,19 @@ function wire() {
     else if (watch.addListener) watch.addListener(react);
   } catch (e) { /* older browser: the choice still works, it just will not follow */ }
   on($('log-btn'), 'click', openLog);
+  on($('report-from-log'), 'click', openReport);
+  on($('report-btn-2'), 'click', openReport);
+  on($('menu-report'), 'click', () => { toggleMenu(false); openReport(); });
+  on($('f-report'), 'input', refreshReport);
+  on($('f-report-log'), 'change', refreshReport);
+  on($('report-copy'), 'click', async () => {
+    try {
+      await navigator.clipboard.writeText(reportTitle() + '\n\n' + reportBody());
+      toast('Report copied.');
+    } catch (e) {
+      window.prompt('Copy the report:', reportBody());
+    }
+  });
   on($('menu-log'), 'click', () => { toggleMenu(false); openLog(); });
   on($('copy-log-3'), 'click', copyLog);
   on($('clear-log'), 'click', clearLog);
