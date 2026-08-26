@@ -1,0 +1,1359 @@
+/* IWMI Hub Uploader — the PWA redesign, as a stylesheet.
+ *
+ * Every value here comes from the design (HubUpload PWA Redesign): navy #28537D,
+ * the #eef2f4 radial ground, white cards on a 10%-navy hairline, DM Serif Text for
+ * headings and Source Sans 3 for everything else. The prototype carried those as
+ * inline styles repeated per element, with each button duplicated for its active
+ * and inactive state; the same design expressed as classes is a tenth of the size
+ * and can be changed in one place.
+ *
+ * Light only, deliberately: this is IWMI's system and the app is a tool used
+ * beside Explorer, which is light too.
+ */
+
+/* Fonts ship with the app. A tool whose point is that it installs should not go
+   to a third party to draw its own name. */
+@font-face {
+  font-family: "DM Serif Text";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/dmseriftext-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Public Sans";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("assets/fonts/publicsans-latin.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: light;
+
+  /* Explorer's tokens, value for value. */
+  --navy: #28537d;
+  --navy-ink: #2e6096;
+  --navy-deep: #1e4166;
+  --blue: #5088c6;
+  --blue-soft: #f2f6fa;
+  --blue-soft-border: #d8e3ee;
+  --cyan: #46bbd4;
+
+  --ink: #17202b;
+  --ink-body: #3f4a57;
+  --ink-2: #5a6672;
+  --ink-3: #7a848f;
+  --ink-4: #9aa3ad;
+
+  --page: #f2f3f4;
+  --surface: #ffffff;
+  --surface-wash: #fafbfc;
+  --field: #ffffff;
+  --sunken: #fafbfc;
+  --slate: #17202b;
+
+  --line: #e8e7e7;
+  --line-soft: #eff0f1;
+  --line-strong: #dcdee1;
+  --line-btn: #dcdee1;
+  --line-ghost: #dcdee1;
+
+  --ok: #22ad7a;
+  --ok-ink: #178f63;
+  --warn: #dd9103;
+  --warn-ink: #8a5b02;
+  --bad: #c0392b;
+  --caveat: #e86933;
+  --space-ink: #b84f22;
+
+  --serif: "DM Serif Text", Georgia, "Times New Roman", serif;
+  --sans: "Public Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --r-card: 12px;
+  --r-field: 9px;
+  --r-btn: 9px;
+  --r-pill: 999px;
+
+  --lift: 0 10px 30px rgba(40, 83, 125, 0.12);
+  --lift-btn: 0 6px 16px rgba(40, 83, 125, 0.35);
+  --lift-modal: 0 24px 60px rgba(40, 83, 125, 0.25);
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--page); }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--page);
+  color: var(--ink-body);
+  font-family: var(--sans);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--navy-ink); text-decoration: none; }
+a:hover { color: var(--navy-deep); }
+::placeholder { color: var(--ink-3); }
+[hidden] { display: none !important; }
+
+/* One icon element, drawn from the sprite. */
+.ic {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  fill: currentColor;
+  vertical-align: -0.125em;
+}
+
+/* ── headings ────────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5 {
+  font-family: var(--serif);
+  font-weight: 400;
+  color: var(--navy);
+  letter-spacing: -0.005em;
+  margin: 0;
+  line-height: 1.15;
+}
+h2.view-title { font-size: 1.35rem; margin-bottom: 4px; }
+h3.card-title { font-size: 1.1rem; margin-bottom: 0.9rem; }
+h3.card-title.sm { font-size: 0.98rem; margin-bottom: 0.6rem; }
+.view-sub { margin: 0 0 1.1rem; font-size: 0.82rem; color: var(--ink-2); }
+
+/* ── fields ──────────────────────────────────────────────────────────────── */
+.lbl {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.hint { font-size: 0.75rem; color: var(--ink-2); margin: 0 0 6px; line-height: 1.5; }
+.hint.tight { margin: 0 0 14px; font-size: 0.72rem; }
+/* A hint that runs straight into the next field's label reads as part of it. */
+.hint + .lbl { margin-top: 14px; }
+.fld {
+  width: 100%;
+  background: var(--field);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-field);
+  padding: 0.5rem 0.6rem;
+  font-family: inherit;
+  font-size: 0.82rem;
+}
+.fld:focus, .fld:focus-visible {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(80, 136, 198, 0.25);
+}
+.fld.mono { font-family: var(--mono); }
+.fld.tall { resize: vertical; }
+.fld[readonly] { color: var(--ink-2); background: var(--surface-wash); }
+select.fld { padding: 0.45rem 0.5rem; }
+.fld-gap { margin-bottom: 0.9rem; }
+
+/* The IWMIHQ/ prefix and its input read as one control. */
+.prefixed {
+  display: flex;
+  align-items: center;
+  background: var(--field);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-field);
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.prefixed:focus-within {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(80, 136, 198, 0.25);
+}
+.prefixed span {
+  padding: 0.45rem 0 0.45rem 0.6rem;
+  color: var(--ink-2);
+  font-size: 0.82rem;
+  font-family: var(--mono);
+}
+.prefixed input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  padding: 0.45rem 0.6rem 0.45rem 0.1rem;
+  font-size: 0.82rem;
+  font-family: var(--mono);
+  outline: none;
+}
+
+/* ── buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: var(--r-btn);
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+}
+.btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.btn-primary { background: var(--navy); border-color: var(--navy); color: #fff; box-shadow: var(--lift-btn); }
+.btn-primary:hover:not(:disabled) { background: var(--navy-deep); border-color: var(--navy-deep); }
+.btn-ghost { border-color: var(--line-ghost); color: var(--ink); }
+.btn-ghost:hover { border-color: var(--navy); color: var(--navy); }
+.btn-danger { border-color: rgba(192, 57, 43, 0.35); color: var(--bad); }
+.btn-danger:hover { background: rgba(192, 57, 43, 0.06); }
+.btn-block { width: 100%; }
+.btn:disabled { cursor: not-allowed; opacity: 1; }
+/* A disabled button still has to be readable: it is telling you what you cannot do
+   yet, and the hint beside it says why. The design's 8%-navy chip with #9AA5B1 text
+   measured 3.4:1 on white and 1.1:1 on the dark ground -- invisible. These tokens
+   flip with the theme and clear AA in both. */
+.btn-primary:disabled {
+  background: var(--blue-soft);
+  border-color: var(--line-strong);
+  color: var(--ink-2);
+  box-shadow: none;
+}
+.btn-link {
+  border: 0;
+  background: transparent;
+  color: var(--navy-ink);
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.btn-link:hover { color: var(--navy-deep); text-decoration: underline; }
+.btn-quiet {
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0;
+}
+.btn-quiet:hover { color: var(--navy); }
+
+/* Segmented choices: repository type, create/update, visibility. One button per
+   option, its state carried by [aria-pressed] rather than by a second copy. */
+.seg { display: flex; gap: 0.35rem; margin-bottom: 0.9rem; }
+.seg button {
+  flex: 1;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border: 1px solid var(--line-btn);
+  background: transparent;
+  color: var(--ink-2);
+  border-radius: var(--r-btn);
+  padding: 0.4rem 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.seg.row button { flex-direction: row; justify-content: center; gap: 5px; padding: 0.35rem 0; }
+.seg button:hover { border-color: var(--navy); color: var(--navy); }
+.seg button[aria-pressed="true"] {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+.seg button:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+
+/* ── the floating bar ────────────────────────────────────────────────────── */
+.topbar { position: sticky; top: 0; z-index: 50; padding: 0.75rem 1rem 0.25rem; }
+.topbar-inner {
+  background: var(--surface);
+  border: 1px solid rgba(40, 83, 125, 0.08);
+  border-radius: var(--r-pill);
+  box-shadow: var(--lift);
+  padding: 0.4rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  /* Deliberately not wrapping: a bar that wraps becomes a tall rounded block with
+     orphaned icons under it. The media queries below drop content instead. */
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+/* IWMI's own wordmark, white on navy, exactly as Explorer's masthead carries it --
+   the white variant is the one IWMI publish for dark grounds, so it needs the navy
+   chip behind it rather than sitting invisibly on a white bar. */
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: none; }
+.brand-logo {
+  background: var(--navy);
+  border-radius: 7px;
+  padding: 5px 9px;
+  display: flex;
+  align-items: center;
+}
+.brand-logo img { height: 17px; width: auto; display: block; }
+/* Institution, divider, then the app: its own mark and its name. The divider is
+   what keeps two marks from reading as one lockup. */
+.brand-app {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+}
+.brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: block;
+  flex: none;
+}
+.brand-name {
+  color: var(--navy);
+  font-weight: 400;
+  font-size: 1rem;
+  font-family: var(--serif);
+  white-space: nowrap;
+}
+.brand-where { font-size: 0.75rem; color: var(--ink-2); white-space: nowrap; }
+
+.tabs {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 0.3rem;
+  padding: 0.15rem 0.25rem;
+  background: var(--blue-soft);
+  border-radius: var(--r-pill);
+}
+.tabs button {
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.tabs button:hover { color: var(--navy); }
+.tabs button[aria-selected="true"] {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: var(--lift-btn);
+}
+.tabs button:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+
+.pill-btn {
+  border: 1px solid var(--line-btn);
+  background: transparent;
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.pill-btn:hover { border-color: var(--navy); color: var(--navy); }
+/* The label is a flex item now, so it can be squeezed into two lines even though the
+   button says nowrap. It may not shrink. */
+.pill-btn .label, .tabs button .label { white-space: nowrap; flex: none; }
+.pill-btn.is-ready {
+  border-color: rgba(40, 83, 125, 0.4);
+  background: rgba(40, 83, 125, 0.08);
+  color: var(--navy);
+}
+.icon-btn {
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.2rem 0.3rem;
+  display: inline-flex;
+}
+.icon-btn:hover { color: var(--navy); }
+
+/* The menu: one button standing in for the whole rail, and the panel it opens.
+   Hidden above 700px, where the rail itself has room. */
+.menu-btn { display: none; }
+/* The panel hangs off .topbar, which is already sticky — and a sticky element is
+   a containing block, so this needs no position of its own. */
+.menu {
+  position: absolute;
+  right: 1rem;
+  top: calc(100% - 0.1rem);
+  z-index: 60;
+  min-width: 232px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: var(--lift-modal);
+  padding: 6px;
+}
+.menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--ink-body);
+  cursor: pointer;
+  text-align: left;
+}
+.menu-item:hover { background: var(--blue-soft); color: var(--navy); }
+.menu-item:focus-visible { outline: 2px solid var(--navy); outline-offset: -2px; }
+.menu-item .ic { color: var(--ink-3); font-size: 0.9rem; }
+.menu-item:hover .ic { color: var(--navy); }
+.menu-item[aria-current="true"] { color: var(--navy); font-weight: 600; }
+.menu-item[aria-current="true"] .ic { color: var(--navy); }
+/* A dot on the section you are in: the menu is the only place that says so once
+   the tab rail is gone. */
+.menu-now { margin-left: auto; color: var(--navy); font-size: 0.6rem; visibility: hidden; }
+.menu-item[aria-current="true"] .menu-now { visibility: visible; }
+.menu-sep { height: 1px; background: var(--line); margin: 6px 4px; }
+.menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  color: var(--ink-body);
+}
+
+/* ── layout ──────────────────────────────────────────────────────────────── */
+.hero {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+.hero-card {
+  width: min(460px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: 0 18px 48px rgba(23, 32, 43, 0.1);
+  overflow: hidden;
+}
+/* The card opens with Explorer's masthead: navy band, the wordmark, a hairline
+   divider, the app's name in the display serif. */
+.hero-head {
+  background: var(--navy);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hero-wordmark { height: 26px; width: auto; display: block; }
+.hero-app {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
+}
+.hero-mark { width: 26px; height: 26px; border-radius: 7px; display: block; flex: none; }
+.hero-head h1 { font-size: 1.15rem; color: #fff; }
+.hero-body { padding: 1.6rem 1.75rem 1.75rem; }
+.hero-where { font-size: 0.78rem; color: var(--ink-3); }
+.rule { border: 0; border-top: 1px solid var(--line); margin: 18px 0; }
+.lede { font-size: 0.9rem; color: var(--ink); margin: 0 0 14px; }
+.err { font-size: 0.78rem; color: var(--bad); margin: 0 0 12px; }
+.copyright { text-align: center; font-size: 0.7rem; color: var(--ink-3); margin-top: 18px; }
+
+.app { flex: 1; display: flex; flex-direction: column; }
+.upload-grid {
+  padding: 0.5rem 1rem 6rem;
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) 1fr;
+  gap: 1.25rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+@media (max-width: 900px) { .upload-grid { grid-template-columns: 1fr; } }
+.col { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.view { padding: 1.25rem 1.5rem; margin: 0 auto; width: 100%; }
+.view.narrow { max-width: 1000px; }
+.view.wide { max-width: 1200px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 1.1rem 1.25rem;
+}
+.card.sunken { background: var(--sunken); }
+.card.snug { padding: 1rem 1.1rem; }
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.7rem;
+}
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 700px) { .pair { grid-template-columns: 1fr; } }
+.empty { font-size: 0.8rem; color: var(--ink-2); font-style: italic; padding: 0.5rem 0; }
+
+/* The maintainer note under the existing-repository picker. Neutral when the
+   repository is yours, amber when it is not — the colour the checks already use for
+   "look at this before you commit". */
+.owner-note {
+  margin: 8px 0 0.9rem;
+  padding: 9px 11px;
+  border-radius: var(--r-field);
+  font-size: 0.76rem;
+  line-height: 1.5;
+  background: var(--surface-wash);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+.owner-note strong { color: var(--ink); }
+.owner-note.theirs {
+  background: rgba(221, 145, 3, 0.08);
+  border-color: rgba(221, 145, 3, 0.35);
+  color: var(--warn-ink);
+}
+.owner-note.theirs strong { color: var(--warn-ink); }
+.owner-note.blocked {
+  background: rgba(192, 57, 43, 0.07);
+  border-color: rgba(192, 57, 43, 0.3);
+  color: var(--bad);
+}
+.owner-note.blocked strong { color: var(--bad); }
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 0.76rem;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.check-row input { accent-color: var(--navy); }
+
+/* ── dropzone ────────────────────────────────────────────────────────────── */
+.drop {
+  background: var(--surface);
+  border: 2px dashed var(--line-ghost);
+  border-radius: var(--r-card);
+  padding: 2.2rem 1.5rem;
+  text-align: center;
+  transition: border-color 0.15s ease;
+}
+.drop.is-over { border-color: var(--navy); }
+.drop-mark { font-size: 1.8rem; color: var(--navy-ink); }
+.drop-title { font-size: 0.95rem; font-weight: 600; color: var(--navy); margin-top: 8px; }
+.drop-sub { font-size: 0.78rem; color: var(--ink-2); margin-top: 4px; }
+.drop-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.drop-actions .btn { font-size: 0.8rem; font-weight: 400; padding: 0.4rem 0.85rem; }
+.or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  color: var(--ink-2);
+  font-size: 0.72rem;
+}
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.drop-links {
+  display: flex;
+  gap: 0.9rem;
+  margin-top: 10px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ── staged files, checks, log ────────────────────────────────────────────── */
+/* Notes about what was changed or left out on the way in. Quiet, but present:
+   silently dropping files is how you end up not trusting an uploader. */
+.staging-note {
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  background: var(--surface-wash);
+  border: 1px solid var(--line);
+  border-radius: var(--r-field);
+  padding: 7px 10px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.staging-note code { font-family: var(--mono); font-size: 0.95em; color: var(--navy); }
+.staging-note button { margin-left: auto; }
+.staging-note.bad {
+  background: rgba(192, 57, 43, 0.07);
+  border-color: rgba(192, 57, 43, 0.3);
+  color: var(--bad);
+}
+.staging-note.bad code { color: var(--bad); }
+
+.files { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--r-field);
+  background: var(--sunken);
+}
+.file-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.file-size { font-size: 0.7rem; color: var(--ink-2); font-family: var(--mono); }
+.tag-lfs {
+  font-size: 0.62rem;
+  color: var(--navy-ink);
+  border: 1px solid rgba(40, 83, 125, 0.35);
+  border-radius: var(--r-pill);
+  padding: 0.05rem 0.4rem;
+}
+.x-btn {
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  padding: 2px;
+  font-size: 0.85rem;
+  display: inline-flex;
+}
+.x-btn:hover { color: var(--bad); }
+
+.checks { display: flex; flex-direction: column; gap: 8px; }
+.check { display: flex; align-items: flex-start; gap: 8px; font-size: 0.78rem; color: var(--ink); }
+.check .ic { margin-top: 0.25em; }
+.check.pass .ic { color: var(--ok); }
+.check.warn .ic { color: var(--warn); }
+.check.fail .ic { color: var(--bad); }
+
+.readme {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--navy-ink);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.log-card {
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 0.9rem 1.1rem;
+}
+.log-card h3 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 0.5rem; }
+.log { display: flex; flex-direction: column; gap: 3px; max-height: 140px; overflow-y: auto; }
+.log div { font-family: var(--mono); font-size: 0.72rem; color: #c7cdd3; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(40, 83, 125, 0.08);
+  border: 1px solid rgba(40, 83, 125, 0.3);
+  color: var(--navy-ink);
+  border-radius: var(--r-pill);
+  padding: 0.2rem 0.4rem 0.2rem 0.65rem;
+  font-size: 0.72rem;
+}
+.tag button {
+  border: 0;
+  background: transparent;
+  color: var(--navy-ink);
+  cursor: pointer;
+  font-size: 0.7rem;
+  display: flex;
+  padding: 2px;
+}
+
+/* ── the upload bar ──────────────────────────────────────────────────────── */
+.footbar {
+  position: sticky;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.97);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -10px 30px rgba(40, 83, 125, 0.08);
+  padding: 0.8rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.footbar span { font-size: 0.82rem; color: var(--ink-2); }
+.footbar .btn { padding: 0.55rem 1.1rem; font-size: 0.85rem; }
+
+/* ── history and projects ────────────────────────────────────────────────── */
+.rows { display: flex; flex-direction: column; gap: 8px; }
+.row-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  padding: 0.8rem 1rem;
+}
+.row-card .ic-lead { color: var(--navy-ink); font-size: 0.95rem; }
+.row-main { flex: 1; min-width: 0; }
+.row-main a { color: var(--ink); font-weight: 600; font-size: 0.85rem; font-family: var(--mono); }
+.row-main a:hover { color: var(--navy); }
+.row-sub { font-size: 0.75rem; color: var(--ink-2); margin-top: 2px; }
+.row-when { font-size: 0.72rem; color: var(--ink-2); }
+
+.badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.badge.model { background: rgba(40, 83, 125, 0.1); color: var(--navy); }
+.badge.dataset { background: rgba(34, 173, 122, 0.12); color: var(--ok-ink); }
+.badge.space { background: rgba(232, 105, 51, 0.12); color: var(--space-ink); }
+.badge.raster { background: rgba(70, 187, 212, 0.12); color: #1e7f94; }
+.badge.done { background: rgba(34, 173, 122, 0.12); color: var(--ok-ink); }
+.badge.private { background: rgba(40, 83, 125, 0.06); color: var(--ink-2); }
+.badge.failed { background: rgba(192, 57, 43, 0.1); color: var(--bad); }
+
+/* Search over the projects already loaded. Filtering in the browser rather than
+   re-querying the Hub: the whole list is here, so a keystroke costs nothing and
+   works offline once loaded. */
+.searchbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 220px;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  padding: 0.4rem 0.85rem;
+}
+.search:focus-within { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(40, 83, 125, 0.1); }
+.search > .ic { color: var(--ink-3); font-size: 0.9rem; }
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.85rem;
+  outline: none;
+}
+/* Safari draws its own clear affordance on a search input, next to ours. */
+.search input::-webkit-search-cancel-button { display: none; }
+.search-x {
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  font-size: 0.75rem;
+}
+.search-x:hover { color: var(--bad); }
+.search-count { font-size: 0.78rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.9rem;
+}
+.proj {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  padding: 1rem 1.1rem;
+  color: inherit;
+}
+.proj:hover { border-color: rgba(40, 83, 125, 0.35); box-shadow: var(--lift); }
+.proj-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.proj-head .ic { color: var(--ink-3); font-size: 0.8rem; }
+.proj-id {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink);
+  font-family: var(--mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.proj-when { font-size: 0.74rem; color: var(--ink-2); margin-top: 6px; }
+
+/* ── modals and toast ────────────────────────────────────────────────────── */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(40, 55, 70, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+}
+.modal {
+  width: min(480px, 100%);
+  background: var(--surface);
+  border: 1px solid rgba(40, 83, 125, 0.14);
+  border-radius: 0.7rem;
+  box-shadow: var(--lift-modal);
+  max-height: 85vh;
+  overflow: auto;
+}
+.modal.sm { width: min(420px, 100%); }
+.modal.md { width: min(440px, 100%); }
+.modal.lg { width: min(620px, 100%); }
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.2rem;
+  border-bottom: 1px solid var(--line);
+}
+.modal-head h5 { font-size: 1.1rem; }
+.modal-x {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.modal-x:hover { color: var(--bad); }
+.modal-body { padding: 1.1rem 1.3rem; font-size: 0.85rem; color: var(--ink); }
+.modal-body.prose { line-height: 1.7; }
+.modal-body.prose p { margin: 0 0 10px; }
+.modal-body.prose p:last-child { margin: 0; }
+.modal-body.center { text-align: center; }
+
+/* The help panel: long enough to need structure, so sections get an eyebrow, the
+   flow gets real numbers, and everything else is a short list. */
+.help { line-height: 1.65; }
+.help .lede { font-size: 0.88rem; margin-bottom: 18px; }
+.help .eyebrow { margin: 20px 0 8px; }
+.help ul { margin: 0; padding-left: 18px; }
+.help ul li + li { margin-top: 8px; }
+.help p { margin: 0; font-size: 0.85rem; }
+.help code {
+  font-family: var(--mono);
+  font-size: 0.8em;
+  background: var(--surface-wash);
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.help .tag-lfs { font-size: 0.6rem; vertical-align: 1px; }
+.help ol.steps { margin: 0; padding-left: 0; list-style: none; counter-reset: step; }
+.help ol.steps > li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 34px;
+  font-size: 0.85rem;
+}
+.help ol.steps > li + li { margin-top: 10px; }
+.help ol.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-pill);
+  display: grid;
+  place-items: center;
+  background: var(--blue-soft);
+  border: 1px solid var(--blue-soft-border);
+  color: var(--navy);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.kv { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 6px; }
+.kv span:last-child { color: var(--ink-2); }
+.kv.mono span:last-child { font-family: var(--mono); }
+.kv-gap { margin-bottom: 16px; }
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.bar { height: 8px; border-radius: var(--r-pill); background: var(--blue-soft); overflow: hidden; margin-bottom: 8px; }
+.bar > div { height: 100%; background: var(--navy); border-radius: var(--r-pill); width: 0; transition: width 0.3s ease; }
+.pct { font-size: 0.75rem; color: var(--ink-2); margin-bottom: 14px; }
+.modal-title { font-size: 1rem; font-weight: 600; color: var(--navy); margin-bottom: 14px; }
+.result-mark { font-size: 2.2rem; }
+.result-mark.ok { color: var(--ok); }
+.result-mark.bad { color: var(--bad); }
+.result-title { font-size: 1.05rem; font-weight: 700; color: var(--navy); margin: 10px 0 4px; }
+.result-repo { font-size: 0.82rem; color: var(--navy-ink); font-family: var(--mono); margin-bottom: 18px; }
+.result-why { font-size: 0.8rem; color: var(--ink-2); margin-bottom: 18px; }
+.result-actions { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
+/* The issue list, in the result modal and inside a History row. */
+.issues {
+  text-align: left;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.issue {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--ink-body);
+}
+.issue .ic { margin-top: 0.2em; flex: none; }
+.issue.info .ic { color: var(--ink-3); }
+.issue.warn .ic { color: var(--warn); }
+.issue.error .ic { color: var(--bad); }
+.issue code { font-family: var(--mono); font-size: 0.95em; }
+
+/* History rows can be opened to show what that upload did. */
+.row-card.has-log { cursor: pointer; }
+.row-open {
+  display: none;
+  width: 100%;
+  border-top: 1px solid var(--line-soft);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.row-card.is-open .row-open { display: block; }
+.row-card.is-open { flex-wrap: wrap; }
+.row-count {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: rgba(221, 145, 3, 0.12);
+  color: var(--warn-ink);
+  white-space: nowrap;
+}
+
+/* A dot on the log button when there is something in it worth reading: a warning
+   or a failure. Notes alone do not earn it — the point is to be ignorable. */
+#log-btn { position: relative; }
+.log-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--warn);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+#menu-log-dot { color: var(--warn); }
+
+.report-preview { margin-top: 12px; }
+.report-preview summary {
+  font-size: 0.76rem;
+  color: var(--navy-ink);
+  cursor: pointer;
+}
+.report-preview summary:hover { color: var(--navy-deep); }
+.report-preview pre {
+  margin: 8px 0 0;
+  max-height: 200px;
+  overflow: auto;
+  background: var(--surface-wash);
+  border: 1px solid var(--line);
+  border-radius: var(--r-field);
+  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.log-transcript {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.log-transcript div {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mini-log {
+  text-align: left;
+  background: var(--field);
+  border-radius: var(--r-btn);
+  padding: 0.6rem 0.7rem;
+  max-height: 110px;
+  overflow-y: auto;
+}
+.mini-log div { font-family: var(--mono); font-size: 0.68rem; color: var(--ink-2); }
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--navy);
+  border: 1px solid var(--navy);
+  border-radius: var(--r-btn);
+  padding: 0.6rem 0.9rem;
+  font-size: 0.8rem;
+  color: #fff;
+  box-shadow: 0 18px 40px rgba(40, 83, 125, 0.35);
+  z-index: 300;
+}
+
+/* ── the dark look ─────────────────────────────────────────────────────────── *
+ * IWMI's palette turned down rather than a generic dark theme: the same navy,
+ * lifted where it has to carry text, and the same green/amber/orange for the
+ * pass, warn and fail it already means. Three states, in this order for a reason:
+ * the bare :root above is the complete light palette; the media query catches
+ * "System" (nothing stamped) without overriding an explicit light choice; the
+ * attribute rule lets the button win either way.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --navy: #7fb0e0;
+    --navy-ink: #8fbce8;
+    --navy-deep: #a8cbec;
+    --blue: #6fa3d6;
+    --blue-soft: #17273a;
+    --blue-soft-border: #26405c;
+
+    --ink: #e9eef3;
+    --ink-body: #b6c2ce;
+    --ink-2: #9aa8b6;
+    --ink-3: #8593a1;
+    --ink-4: #6f7d8b;
+
+    --page: #0f1620;
+    --surface: #151f2b;
+    --surface-wash: #121b25;
+    --field: #101a24;
+    --sunken: #121b25;
+
+    --line: #263240;
+    --line-soft: #1e2833;
+    --line-strong: #2d3d4f;
+    --line-btn: #2d3d4f;
+    --line-ghost: #2d3d4f;
+
+    --ok: #59c69b;
+    --ok-ink: #59c69b;
+    --warn: #e0ac48;
+    --warn-ink: #e0ac48;
+    --bad: #f08a7a;
+    --caveat: #f0916a;
+    --space-ink: #f0916a;
+
+    --lift: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --lift-btn: 0 6px 16px rgba(0, 0, 0, 0.5);
+    --lift-modal: 0 24px 60px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme="dark"] {
+  --navy: #7fb0e0;
+  --navy-ink: #8fbce8;
+  --navy-deep: #a8cbec;
+  --blue: #6fa3d6;
+  --blue-soft: #17273a;
+  --blue-soft-border: #26405c;
+
+  --ink: #e9eef3;
+  --ink-body: #b6c2ce;
+  --ink-2: #9aa8b6;
+  --ink-3: #8593a1;
+  --ink-4: #6f7d8b;
+
+  --page: #0f1620;
+  --surface: #151f2b;
+  --surface-wash: #121b25;
+  --field: #101a24;
+  --sunken: #121b25;
+
+  --line: #263240;
+  --line-soft: #1e2833;
+  --line-strong: #2d3d4f;
+  --line-btn: #2d3d4f;
+  --line-ghost: #2d3d4f;
+
+  --ok: #59c69b;
+  --ok-ink: #59c69b;
+  --warn: #e0ac48;
+  --warn-ink: #e0ac48;
+  --bad: #f08a7a;
+  --caveat: #f0916a;
+  --space-ink: #f0916a;
+
+  --lift: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --lift-btn: 0 6px 16px rgba(0, 0, 0, 0.5);
+  --lift-modal: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* Four things do not follow the tokens on their own. */
+
+/* The primary button is navy-on-white in the light look; in the dark one navy is
+   a pale blue, so its text has to become the dark ground. */
+/* :not(:disabled) matters more than it looks: without it this rule outranks
+   .btn-primary:disabled and paints the dark ground onto a dark chip -- 1.2:1, which
+   is how the disabled upload button became invisible. */
+:root[data-theme="dark"] .btn-primary:not(:disabled),
+:root[data-theme="dark"] .seg button[aria-pressed="true"],
+:root[data-theme="dark"] .theme-toggle button[aria-pressed="true"],
+:root[data-theme="dark"] .tabs button[aria-selected="true"] { color: #0f1620; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .btn-primary:not(:disabled),
+  :root:not([data-theme="light"]) .seg button[aria-pressed="true"],
+  :root:not([data-theme="light"]) .theme-toggle button[aria-pressed="true"],
+  :root:not([data-theme="light"]) .tabs button[aria-selected="true"] { color: #0f1620; }
+}
+
+/* The wordmark is white-on-transparent, so it keeps its navy chip in both looks --
+   on a dark surface the chip reads as the brand block it is on iwmi.org. */
+
+/* The upload bar is a translucent white in the light look. */
+:root[data-theme="dark"] .footbar { background: rgba(21, 31, 43, 0.97); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .footbar { background: rgba(21, 31, 43, 0.97); }
+}
+
+/* The connect card's masthead stays brand navy in both looks: it is the one place
+   the deep navy still has white text on it. */
+:root[data-theme="dark"] .hero-head,
+:root[data-theme="dark"] .brand-logo { background: #28537d; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .hero-head,
+  :root:not([data-theme="light"]) .brand-logo { background: #28537d; }
+}
+
+/* The deployment log is already a dark card; in the dark look it needs to be
+   darker than the surface it sits on, not lighter. */
+:root[data-theme="dark"] .log-card { background: #0a1017; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .log-card { background: #0a1017; }
+}
+
+/* The appearance toggle: both looks visible, the one in force filled. Same idiom
+   as the tab rail beside it — a soft pill holding two round segments — so it reads
+   as a choice rather than a button that does something. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: var(--blue-soft);
+  border: 1px solid var(--line);
+}
+.theme-toggle button {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  padding: 0;
+}
+.theme-toggle button:hover { color: var(--navy); }
+.theme-toggle button[aria-pressed="true"] {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: var(--lift-btn);
+}
+.theme-toggle button:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+
+/* ── widths ─────────────────────────────────────────────────────────────────
+ * Each step removes the thing that has stopped earning its space, so the bar
+ * stays one row from a 27-inch display down to a phone. Everything dropped is
+ * either said elsewhere or still reachable — the tab buttons keep their labels
+ * as accessible names, so a screen reader is unaffected by any of this.
+ */
+
+/* Measured, not guessed. The bar cannot wrap, so each step has to remove at least
+   as much as the next width takes away: with everything on show it needs 1120px, so
+   the org line (160px) goes first -- the wordmark beside it already says IWMI, and
+   the connect card said IWMIHQ. */
+@media (max-width: 1160px) {
+  .brand-where { display: none; }
+  .topbar-inner { gap: 0.8rem; }
+}
+
+/* Then "Install app" becomes its icon (103px -> 26px), which carries the bar down
+   to where the app's name goes. */
+@media (max-width: 960px) {
+  #install-btn .label { display: none; }
+  #install-btn { padding: 0.3rem 0.55rem; }
+}
+
+/* The app's name in the serif. The wordmark stays. */
+@media (max-width: 880px) {
+  .brand-name { display: none; }
+  .brand-app { padding-left: 8px; }
+  .brand { gap: 8px; }
+  .topbar { padding: 0.6rem 0.75rem 0.25rem; }
+  .topbar-inner { gap: 0.6rem; padding: 0.35rem 0.6rem; }
+  .tabs { margin-left: auto; }
+  .view { padding: 1rem 1rem 1.25rem; }
+  .upload-grid { padding: 0.5rem 0.75rem 6rem; gap: 1rem; }
+  .footbar { padding: 0.7rem 1rem; }
+}
+
+/* Here the rail collapses. Three unlabelled icons and a navy circle are only
+   recognisable to someone who already knows them; a menu has room for words. */
+@media (max-width: 700px) {
+  .topbar-inner > .tabs,
+  .topbar-inner > #install-btn,
+  .topbar-inner > #log-btn,
+  .topbar-inner > #help-btn,
+  .topbar-inner > #settings-btn,
+  .topbar-inner > .theme-toggle { display: none; }
+  .menu-btn { display: inline-flex; margin-left: auto; }
+  .card { padding: 1rem; }
+  .card.snug { padding: 0.9rem 1rem; }
+  .drop { padding: 1.6rem 1rem; }
+  .modal-body, .modal-head { padding-left: 1rem; padding-right: 1rem; }
+  /* The footbar's hint gives way to the button rather than pushing it off. */
+  .footbar span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .footbar .btn { flex: none; }
+}
+
+/* Phones. The bar is wordmark, tabs, toggle, help, settings — and Install moves
+   into the Settings panel, where the same explanation already lives. */
+@media (max-width: 560px) {
+  .topbar { padding: 0.5rem 0.5rem 0.25rem; }
+  .topbar-inner { gap: 0.4rem; padding: 0.3rem 0.45rem; }
+  .menu { right: 0.5rem; left: 0.5rem; min-width: 0; }
+  .brand-logo { padding: 4px 7px; }
+  .brand-logo img { height: 15px; }
+  .brand-mark { width: 20px; height: 20px; }
+  .hero-mark { width: 22px; height: 22px; }
+  .theme-toggle button { width: 24px; height: 24px; }
+  .icon-btn { padding: 0.15rem 0.2rem; }
+  .searchbar { gap: 0.5rem; }
+  .search { max-width: none; }
+  .view-title { font-size: 1.2rem; }
+  .row-card { flex-wrap: wrap; gap: 8px 10px; }
+  .row-card .row-when { margin-left: auto; }
+  .grid-cards { grid-template-columns: 1fr; }
+  .hero { padding: 16px 10px; }
+  .hero-head { padding: 16px 18px; }
+  .hero-head img { height: 22px; }
+  .hero-head h1 { font-size: 1.02rem; }
+  .hero-body { padding: 1.25rem 1.25rem 1.4rem; }
+  .result-actions { flex-direction: column; }
+  .result-actions .btn, .result-actions a { width: 100%; }
+}
+
+/* Small phones: the tab rail loses its own padding so three icons plus the
+   toggle still fit beside the wordmark. */
+@media (max-width: 380px) {
+  .topbar-inner { gap: 0.3rem; }
+  .view { padding: 0.85rem 0.75rem 1rem; }
+  .card, .card.snug { padding: 0.85rem 0.9rem; }
+}
+
+/* Short windows — a laptop with a browser and a video call in it. The sticky bar
+   and the upload bar together eat a 600px-high viewport, so the panels give up
+   their fixed maximums and the page scrolls as one. */
+@media (max-height: 620px) {
+  .files, .readme, .log { max-height: 140px; }
+  .modal { max-height: 92vh; }
+  .hero { padding: 12px 10px; align-items: flex-start; }
+}
+
+/* Installed as an app, the title bar is the window's own; there is no browser
+   chrome to sit under, so the sticky bar needs no extra room. */
+@media (display-mode: standalone) {
+  .topbar { padding-top: 0.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

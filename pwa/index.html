@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hub uploader — IWMIHQ</title>
+<meta name="description" content="Upload models, datasets and Spaces to the IWMIHQ organization on the Hugging Face Hub.">
+<meta name="theme-color" content="#28537D">
+<link rel="manifest" href="manifest.json">
+<!-- The drawing first, for anything that takes one; the 32px raster for the rest. -->
+<link rel="icon" type="image/svg+xml" href="assets/hub-uploader-icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="app.css">
+<script>
+  /* Before first paint: a stored choice becomes an attribute on <html>, so a dark
+     app does not flash light on every launch. "system" stamps nothing and lets the
+     media query decide. */
+  (function () {
+    try {
+      var choice = localStorage.getItem('hu_theme');
+      if (choice === 'light' || choice === 'dark') {
+        document.documentElement.setAttribute('data-theme', choice);
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+<!-- ══ connect ═══════════════════════════════════════════════════════════════
+     The design's connect card. One change from the prototype, and it is the
+     reason this app needs no server: the token is the person's own, pasted once
+     and kept in this browser, instead of one org-wide write token shipped to
+     every client. Nothing to leak, and the Hub records who actually committed.
+-->
+<section class="hero" id="screen-connect">
+  <div class="hero-card">
+    <div class="hero-head">
+      <img class="hero-wordmark" src="assets/iwmi-logo-white.png"
+           alt="IWMI — International Water Management Institute">
+      <span class="hero-app">
+        <img class="hero-mark" src="assets/hub-uploader-icon.svg" alt="">
+        <h1>Hub uploader</h1>
+      </span>
+    </div>
+
+    <div class="hero-body">
+    <p class="lede">Connect your Hugging Face account to start.
+      Uploads go to <strong>IWMIHQ</strong> on the Hugging Face Hub.</p>
+
+    <label class="lbl" for="f-token">Your access token</label>
+    <input class="fld mono fld-gap" id="f-token" type="password" autocomplete="off"
+           spellcheck="false" placeholder="hf_…">
+    <p class="hint">A <strong>write</strong> token from your own Hugging Face account. It stays in
+      this browser and is never sent anywhere except huggingface.co.</p>
+    <p class="hint">No account yet? <a href="https://huggingface.co/join" target="_blank" rel="noopener">Create one ↗</a>
+      then <a href="https://huggingface.co/settings/tokens/new?tokenType=write" target="_blank" rel="noopener">make a write token ↗</a>.
+      Ask an admin to add you to IWMIHQ.</p>
+
+    <hr class="rule">
+
+    <label class="lbl" for="f-name">Your name</label>
+    <input class="fld fld-gap" id="f-name" type="text" placeholder="Jane Mokoena">
+    <p class="hint">Recorded in every commit message. Filled in from your account when you connect.</p>
+
+    <label class="lbl" for="f-org">Organization</label>
+    <input class="fld fld-gap" id="f-org" type="text" readonly
+           value="IWMIHQ — International Water Management Institute">
+
+    <p class="err" id="connect-error" hidden></p>
+    <button class="btn btn-primary btn-block" id="connect-btn">Continue</button>
+    <div class="copyright">© 2026 International Water Management Institute (IWMI)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ the app ═══════════════════════════════════════════════════════════════ -->
+<div class="app" id="screen-app" hidden>
+
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-logo"><img src="assets/iwmi-logo-white.png"
+              alt="IWMI — International Water Management Institute"></span>
+        <span class="brand-app">
+          <img class="brand-mark" src="assets/hub-uploader-icon.svg" alt="">
+          <span class="brand-name">Hub uploader</span>
+        </span>
+      </div>
+      <div class="brand-where">IWMIHQ · Hugging Face Hub</div>
+
+      <div class="tabs" role="tablist" aria-label="Sections">
+        <button role="tab" data-tab="upload" aria-selected="true" title="Upload" aria-label="Upload">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-cloud-upload"/></svg>
+          <span class="label">Upload</span></button>
+        <button role="tab" data-tab="history" aria-selected="false" title="History" aria-label="History">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-clock-history"/></svg>
+          <span class="label">History</span></button>
+        <button role="tab" data-tab="projects" aria-selected="false" title="Projects" aria-label="Projects">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-grid-3x3-gap-fill"/></svg>
+          <span class="label">Projects</span></button>
+      </div>
+
+      <button class="pill-btn" id="install-btn" title="Install app" aria-label="Install app">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-display"/></svg>
+        <span class="label">Install app</span></button>
+      <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Appearance">
+        <button data-look="light" title="Light" aria-label="Light" aria-pressed="true">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-brightness-high-fill"/></svg>
+        </button>
+        <button data-look="dark" title="Dark" aria-label="Dark" aria-pressed="false">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-moon-stars-fill"/></svg>
+        </button>
+      </div>
+      <button class="icon-btn" id="log-btn" title="Activity log" aria-label="Activity log">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-journal-text"/></svg>
+        <span class="log-dot" id="log-dot" hidden></span></button>
+      <button class="icon-btn" id="help-btn" title="Help" aria-label="Help">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-question-circle"/></svg></button>
+      <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Settings">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-gear-fill"/></svg></button>
+
+      <!-- Below 700px the rail above collapses into this. Everything it held gets
+           its name back inside the menu, where there is room for words. -->
+      <button class="icon-btn menu-btn" id="menu-btn" title="Menu" aria-label="Menu"
+              aria-expanded="false" aria-controls="menu">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-list"/></svg></button>
+    </div>
+
+    <div class="menu" id="menu" hidden>
+      <button class="menu-item" data-menu-tab="upload">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-cloud-upload"/></svg>
+        Upload<span class="menu-now" aria-hidden="true">●</span></button>
+      <button class="menu-item" data-menu-tab="history">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-clock-history"/></svg>
+        History<span class="menu-now" aria-hidden="true">●</span></button>
+      <button class="menu-item" data-menu-tab="projects">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-grid-3x3-gap-fill"/></svg>
+        Projects<span class="menu-now" aria-hidden="true">●</span></button>
+
+      <div class="menu-sep"></div>
+
+      <div class="menu-row">
+        <span>Appearance</span>
+        <div class="theme-toggle" role="group" aria-label="Appearance">
+          <button data-look="light" title="Light" aria-label="Light" aria-pressed="true">
+            <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-brightness-high-fill"/></svg>
+          </button>
+          <button data-look="dark" title="Dark" aria-label="Dark" aria-pressed="false">
+            <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-moon-stars-fill"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="menu-sep"></div>
+
+      <button class="menu-item" id="menu-install">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-display"/></svg>
+        Install this app</button>
+      <button class="menu-item" id="menu-log">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-journal-text"/></svg>
+        Activity log<span class="menu-now" id="menu-log-dot" aria-hidden="true">●</span></button>
+      <button class="menu-item" id="menu-report">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-bug-fill"/></svg>
+        Report a problem</button>
+      <button class="menu-item" id="menu-help">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-question-circle"/></svg>
+        How to use this app</button>
+      <button class="menu-item" id="menu-settings">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-gear-fill"/></svg>
+        Settings</button>
+    </div>
+  </div>
+
+  <!-- ── upload ─────────────────────────────────────────────────────────── -->
+  <div id="tab-upload">
+    <div class="upload-grid">
+
+      <div class="col">
+        <div class="card">
+          <h3 class="card-title">Destination</h3>
+
+          <div class="lbl">Repository type</div>
+          <div class="seg" id="repo-type">
+            <button data-type="model" aria-pressed="true">
+              <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-box-seam"/></svg>Model</button>
+            <button data-type="dataset" aria-pressed="false">
+              <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-database-fill"/></svg>Dataset</button>
+            <button data-type="space" aria-pressed="false">
+              <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-rocket-takeoff-fill"/></svg>Space</button>
+          </div>
+
+          <div id="sdk-row" hidden>
+            <label class="lbl" for="f-sdk">Space SDK</label>
+            <select class="fld fld-gap" id="f-sdk">
+              <option value="gradio">Gradio</option>
+              <option value="streamlit">Streamlit</option>
+              <option value="docker">Docker</option>
+              <option value="static">Static</option>
+            </select>
+          </div>
+
+          <div class="lbl">Repository</div>
+          <div class="seg row" id="repo-mode">
+            <button data-mode="create" aria-pressed="true">Create new</button>
+            <button data-mode="update" aria-pressed="false">Update existing</button>
+          </div>
+
+          <div id="create-fields">
+            <label class="lbl" for="f-repo">Repository name</label>
+            <div class="prefixed fld-gap">
+              <span>IWMIHQ/</span>
+              <input id="f-repo" type="text" placeholder="my-repository" spellcheck="false">
+            </div>
+
+            <div class="lbl">Visibility</div>
+            <div class="seg row" id="visibility">
+              <button data-vis="public" aria-pressed="true">
+                <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-eye"/></svg>Public</button>
+              <button data-vis="private" aria-pressed="false">
+                <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-lock-fill"/></svg>Private</button>
+            </div>
+
+            <label class="lbl" for="f-license">License</label>
+            <select class="fld fld-gap" id="f-license">
+              <option value="cc-by-4.0">CC BY 4.0</option>
+              <option value="cc-by-sa-4.0">CC BY-SA 4.0</option>
+              <option value="cc-by-nc-4.0">CC BY-NC 4.0</option>
+              <option value="mit">MIT</option>
+              <option value="apache-2.0">Apache 2.0</option>
+              <option value="odc-by">ODC-BY</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div id="update-fields" hidden>
+            <label class="lbl" for="f-existing">Existing repository</label>
+            <select class="fld" id="f-existing">
+              <option value="">Loading…</option>
+            </select>
+            <!-- Who owns what, at the moment of choosing rather than after. -->
+            <div class="owner-note" id="owner-note" hidden></div>
+
+            <div id="confirm-row" hidden>
+              <label class="lbl" for="f-confirm">Type <code id="confirm-name"></code> to confirm</label>
+              <input class="fld mono fld-gap" id="f-confirm" type="text" spellcheck="false"
+                     autocomplete="off" placeholder="repository name">
+            </div>
+          </div>
+
+          <label class="lbl" for="f-commit">Commit message</label>
+          <input class="fld" id="f-commit" type="text" placeholder="Add files via Hub uploader">
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Repository card</h3>
+          <p class="hint">Used to generate the README automatically.</p>
+
+          <label class="check-row" style="margin-bottom:10px">
+            <input type="checkbox" id="f-write-readme" checked>
+            <span id="readme-choice">Write README.md</span>
+          </label>
+
+          <label class="lbl" for="f-desc">Short description</label>
+          <textarea class="fld tall fld-gap" id="f-desc" rows="3"
+                    placeholder="What is this repository for?"></textarea>
+
+          <label class="lbl" for="f-tag">Tags</label>
+          <input class="fld" id="f-tag" type="text" placeholder="Press Enter to add a tag"
+                 style="margin-bottom:8px">
+          <div class="tags" id="tag-list"></div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="drop" id="dropzone">
+          <div class="drop-mark"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-cloud-upload"/></svg></div>
+          <div class="drop-title">Drag files or a folder here</div>
+          <div class="drop-sub">Folder structure is kept. Files over 10 MB upload via git LFS automatically.</div>
+          <div class="drop-actions">
+            <button class="btn btn-ghost" id="pick-files">Browse files…</button>
+            <button class="btn btn-ghost" id="pick-folder">Browse folder…</button>
+          </div>
+          <input id="in-files" type="file" multiple hidden>
+          <input id="in-folder" type="file" webkitdirectory hidden>
+          <div class="or">or</div>
+          <div class="drop-links">
+            <button class="btn-link" id="github-btn">
+              <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-github"/></svg>Import from GitHub</button>
+            <button class="btn-link" id="example-btn">Use example files</button>
+          </div>
+        </div>
+
+        <div class="card snug">
+          <div class="card-head">
+            <h3 class="card-title sm" style="margin:0">Staged files <span id="file-count"></span></h3>
+            <button class="btn-quiet" id="clear-files" hidden>Clear all</button>
+          </div>
+          <div class="empty" id="files-empty">Nothing staged yet. Add files to see checks and the generated README.</div>
+
+          <!-- What was dropped on the way in: the folder's own name, and anything
+               that has no business on the Hub. -->
+          <div class="staging-note" id="root-note" hidden></div>
+          <div class="staging-note" id="skip-note" hidden></div>
+          <div class="staging-note bad" id="secret-note" hidden></div>
+
+          <div class="files" id="file-list"></div>
+        </div>
+
+        <div class="pair">
+          <div class="card snug">
+            <h3 class="card-title sm">Pre-flight checks</h3>
+            <div class="empty" id="checks-empty">Add files to see checks and the generated README.</div>
+            <div class="checks" id="check-list"></div>
+          </div>
+          <div class="card snug sunken">
+            <h3 class="card-title sm">Generated README.md</h3>
+            <div class="empty" id="readme-empty">Nothing staged yet. Add files to see the generated README.</div>
+            <pre class="readme" id="readme-out" hidden></pre>
+          </div>
+        </div>
+
+        <div class="log-card" id="log-card" hidden>
+          <h3>Deployment log</h3>
+          <div class="log" id="log-lines"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footbar">
+      <span id="upload-hint">Add files to enable upload.</span>
+      <button class="btn btn-primary" id="upload-btn" disabled>
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-upload"/></svg>Upload to Hub</button>
+    </div>
+  </div>
+
+  <!-- ── history ────────────────────────────────────────────────────────── -->
+  <div class="view narrow" id="tab-history" hidden>
+    <h2 class="view-title">History</h2>
+    <p class="view-sub">Uploads made from this device through Hub uploader.</p>
+    <div class="empty" id="history-empty">No uploads yet on this device.</div>
+    <div class="rows" id="history-list"></div>
+  </div>
+
+  <!-- ── projects ───────────────────────────────────────────────────────── -->
+  <div class="view wide" id="tab-projects" hidden>
+    <h2 class="view-title">All IWMIHQ projects</h2>
+    <p class="view-sub">Everything IWMIHQ has published on the Hugging Face Hub — public
+      repositories, plus private ones your account can see as an organization member.</p>
+    <div class="searchbar">
+      <div class="search">
+        <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-search"/></svg>
+        <input id="f-search" type="search" autocomplete="off" spellcheck="false"
+               placeholder="Search IWMIHQ projects" aria-label="Search projects">
+        <button class="search-x" id="search-clear" aria-label="Clear search" hidden>
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-x-lg"/></svg>
+        </button>
+      </div>
+      <span class="search-count" id="projects-count"></span>
+    </div>
+
+    <div class="empty" id="projects-loading">Loading…</div>
+    <p class="err" id="projects-error" hidden></p>
+    <div class="empty" id="projects-empty" hidden>No projects found for IWMIHQ yet.</div>
+    <div class="empty" id="projects-nomatch" hidden>Nothing matches that search.</div>
+    <div class="grid-cards" id="projects-list"></div>
+  </div>
+</div>
+
+<!-- ══ upload progress / result ═══════════════════════════════════════════ -->
+<div class="scrim" id="modal-upload" hidden>
+  <div class="modal md" role="dialog" aria-modal="true" aria-labelledby="upload-state-title">
+    <div class="modal-body center">
+
+      <div id="state-uploading">
+        <div class="modal-title" id="upload-state-title">Uploading…</div>
+        <div class="bar"><div id="upload-bar"></div></div>
+        <div class="pct" id="upload-pct">0%</div>
+        <div class="result-why">Keep this window open. Large files upload via git LFS.</div>
+        <div class="mini-log" id="mini-log"></div>
+      </div>
+
+      <div id="state-success" hidden>
+        <div class="result-mark ok"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-check-circle-fill"/></svg></div>
+        <div class="result-title">Upload complete</div>
+        <div class="result-repo" id="done-repo"></div>
+
+        <!-- What it did, beyond finishing: what was skipped, refused, renamed or
+             left alone. Reading this should remove any need to go and check. -->
+        <div class="issues" id="done-issues" hidden></div>
+
+        <div class="result-actions">
+          <a class="btn btn-primary" id="done-link" target="_blank" rel="noopener">View on Hub ↗</a>
+          <button class="btn btn-ghost" id="again-btn">Upload another</button>
+          <button class="btn btn-ghost" id="copy-log">Copy log</button>
+        </div>
+      </div>
+
+      <div id="state-failed" hidden>
+        <div class="result-mark bad"><svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-x-circle-fill"/></svg></div>
+        <div class="result-title">Upload failed</div>
+        <div class="result-why" id="fail-why"></div>
+        <div class="issues" id="fail-issues" hidden></div>
+        <div class="result-actions">
+          <button class="btn btn-ghost" id="back-btn">Back</button>
+          <button class="btn btn-ghost" id="copy-log-2">Copy log</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ help ══════════════════════════════════════════════════════════════ -->
+<div class="scrim" id="modal-help" hidden>
+  <div class="modal lg" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="modal-head">
+      <h5 id="help-title">How to use this app</h5>
+      <button class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body help">
+
+      <p class="lede">This app puts files into a repository on the Hugging Face Hub,
+        under the <strong>IWMIHQ</strong> organization, in one commit. It never
+        deletes anything.</p>
+
+      <div class="eyebrow">Before you start</div>
+      <ul>
+        <li>You need your own Hugging Face account, added to <strong>IWMIHQ</strong>
+          with write access — ask an admin.</li>
+        <li>And a <strong>write</strong> token from that account
+          (<a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener">huggingface.co/settings/tokens</a>).
+          A read-only one is refused when you connect rather than at the end of an
+          upload.</li>
+        <li>The token stays in this browser. Nothing is sent anywhere except
+          huggingface.co, and <em>Sign out</em> removes it.</li>
+      </ul>
+
+      <div class="eyebrow">The five steps</div>
+      <ol class="steps">
+        <li><strong>Choose a type.</strong> A <em>Model</em> holds weights, a
+          <em>Dataset</em> holds data, a <em>Space</em> holds an app — and a Space also
+          asks which SDK runs it (Gradio, Streamlit, Docker or static).</li>
+        <li><strong>Create new, or update existing.</strong> Creating asks for a name
+          under <code>IWMIHQ/</code>, whether it is public or private, and a licence.
+          Updating lists what is already there — including private repositories your
+          account can see — and adds your files to one of them.</li>
+        <li><strong>Add files.</strong> Drag them in, browse for files or a whole
+          folder, or import from a public GitHub repository. Folder structure is kept,
+          so <code>data/2024/eta.tif</code> arrives at that path.</li>
+        <li><strong>Read the checks and the README.</strong> Both update as you type.
+          A warning is not a blocker: it is something to look at before you commit.</li>
+        <li><strong>Upload to Hub.</strong> One commit, with a progress bar and a log.
+          Keep the window open until it finishes.</li>
+      </ol>
+
+      <div class="eyebrow">What it does with your files</div>
+      <ul>
+        <li><strong>Large files go via git LFS automatically</strong> — anything over
+          10 MB is marked <span class="tag-lfs">LFS</span> in the staged list. You do
+          not have to configure anything, but those uploads take longer.</li>
+        <li><strong>A README.md is generated for a new repository</strong> — the
+          licence, your tags and the Space SDK as front matter, then the description,
+          your name and the list of files.</li>
+        <li><strong>An existing README is never overwritten.</strong> Updating a
+          repository that already has one leaves it alone unless you tick
+          <em>Update README.md</em>, and even then only the <code>maintainers:</code>
+          line changes: every other front-matter key and every word of the text stays.
+          This matters most for a Space, where that file holds the title, emoji, SDK
+          and app file the Hub builds from.</li>
+        <li><strong>Nothing else in the repository is touched.</strong> Updating adds
+          or replaces the paths you staged; other files stay as they are.</li>
+        <li><strong>The commit message</strong> is what you typed, or "Add files via
+          Hub uploader" with your name. It is what people see in the repository's
+          history, so a sentence beats a filename.</li>
+      </ul>
+
+      <div class="eyebrow">Importing from GitHub</div>
+      <p>Give it <code>owner/repo</code> or a full GitHub URL. It stages the first
+        <strong>25 files under 5 MB</strong> from the default branch, keeping their
+        paths — enough for code and configuration, not for data. Public repositories
+        only; it does not ask GitHub for a token.</p>
+
+      <div class="eyebrow">What it says it did</div>
+      <p>The <strong>activity log</strong> — the notebook icon in the bar — records every
+        decision worth questioning as it happens: files skipped or refused, a folder
+        prefix dropped, whether a README was written, merged or left alone, what went
+        via LFS. A dot appears when there is a warning or a failure in it, <em>Copy
+        log</em> puts it all on the clipboard, and each upload keeps its own list:
+        click a row in History to see what that one did.</p>
+
+      <div class="eyebrow">After the upload</div>
+      <ul>
+        <li><strong>History</strong> lists what you uploaded <em>from this device</em>
+          — the last 25, kept in this browser. It is not an organization-wide log.</li>
+        <li><strong>Projects</strong> lists everything IWMIHQ has published, plus
+          private repositories your account can see. The search box filters by name,
+          by kind ("space"), or by visibility ("private"), and every word has to
+          match.</li>
+        <li>The Hub takes a few minutes to build a Space and to render a dataset
+          preview. A repository that looks empty immediately after an upload is
+          usually still processing.</li>
+      </ul>
+
+      <div class="eyebrow">Telling somebody</div>
+      <p><strong>Report a problem</strong> — in the activity log, the menu, or Settings —
+        writes the report for you: what you describe, plus the log and a few details
+        about this browser, with any access token stripped out. It then opens either a
+        GitHub issue or an email, already filled in, for you to send. The app posts
+        nothing by itself.</p>
+
+      <div class="eyebrow">When something goes wrong</div>
+      <ul>
+        <li><strong>"That token is read-only."</strong> Make a new token with the
+          write role; you cannot upgrade an existing one.</li>
+        <li><strong>401 or 403 on upload.</strong> The token was revoked, or your
+          account is not a member of IWMIHQ with write access.</li>
+        <li><strong>The repository already exists.</strong> Creating one that is
+          already there is not an error — it uploads into the existing repository and
+          says so in the log.</li>
+        <li><strong>The upload failed halfway.</strong> A commit either lands or it
+          does not; a failed one leaves the repository as it was. Fix what the message
+          says and press upload again.</li>
+        <li><strong>It is slow.</strong> Large files and many files both cost time, and
+          the whole upload runs from this browser — closing the window stops it. The
+          app warns before you leave with an upload running.</li>
+      </ul>
+
+      <div class="eyebrow">The app itself</div>
+      <ul>
+        <li><strong>Install it</strong> and it opens in its own window: the install
+          icon in the address bar on Chrome or Edge, Share → Add to Dock on Safari.</li>
+        <li><strong>It works offline</strong> up to the point of uploading — staging
+          files, the checks and the README all happen here. Only the upload needs the
+          network.</li>
+        <li><strong>Light or dark</strong> is the sun/moon toggle in the bar; until you
+          choose, it follows your system.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══ settings ══════════════════════════════════════════════════════════ -->
+<div class="scrim" id="modal-settings" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal-head">
+      <h5 id="settings-title">Settings</h5>
+      <button class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="eyebrow">Application</div>
+      <div class="kv kv-gap"><span>IWMI Hub Uploader</span><span id="app-mode">v1.0.0</span></div>
+
+      <div class="kv kv-gap"><span>Appearance</span><span id="theme-label">—</span></div>
+
+      <div class="eyebrow">Connection</div>
+      <div class="kv"><span>Organization</span><span>IWMIHQ</span></div>
+      <div class="kv"><span>Signed in as</span><span id="who">—</span></div>
+      <div class="kv mono"><span>Your token</span><span id="token-mask">—</span></div>
+      <div class="kv kv-gap"><span>Backend</span><span>Hugging Face Hub</span></div>
+
+      <label class="lbl" for="f-name-2">Your name</label>
+      <input class="fld" id="f-name-2" type="text" style="margin-bottom:8px">
+      <p class="hint tight">Recorded in every commit message.</p>
+      <button class="btn btn-primary" id="save-settings" style="margin-bottom:18px">Save</button>
+
+      <button class="btn btn-ghost" id="install-btn-2" style="margin-bottom:10px">Install this app</button>
+      <button class="btn btn-ghost" id="report-btn-2" style="margin-bottom:18px">Report a problem</button>
+
+      <hr class="rule" style="margin-top:0">
+      <button class="btn btn-danger" id="signout-btn">Sign out</button>
+      <p class="hint" style="margin-top:8px">Signing out removes the token from this browser.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ activity log ══════════════════════════════════════════════════════ -->
+<div class="scrim" id="modal-log" hidden>
+  <div class="modal lg" role="dialog" aria-modal="true" aria-labelledby="log-title">
+    <div class="modal-head">
+      <h5 id="log-title">Activity log</h5>
+      <button class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="hint" id="log-scope">What this app has done since you opened it.</p>
+      <div class="issues" id="log-issues" hidden></div>
+      <div class="empty" id="log-empty">Nothing yet. Staging files and uploading both
+        write here.</div>
+      <div class="log-transcript" id="log-transcript" hidden></div>
+      <div class="result-actions" style="justify-content:flex-start;margin-top:14px">
+        <button class="btn btn-primary" id="report-from-log">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-bug-fill"/></svg>
+          Report a problem</button>
+        <button class="btn btn-ghost" id="copy-log-3">Copy log</button>
+        <button class="btn btn-ghost" id="clear-log">Clear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ report a problem ══════════════════════════════════════════════════ -->
+<div class="scrim" id="modal-report" hidden>
+  <div class="modal lg" role="dialog" aria-modal="true" aria-labelledby="report-title">
+    <div class="modal-head">
+      <h5 id="report-title">Report a problem</h5>
+      <button class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <label class="lbl" for="f-report">What happened?</label>
+      <textarea class="fld tall" id="f-report" rows="4"
+                placeholder="What you were doing, what you expected, and what happened instead."></textarea>
+
+      <label class="check-row" style="margin:10px 0 0">
+        <input type="checkbox" id="f-report-log" checked>
+        <span>Attach the activity log and browser details</span>
+      </label>
+      <p class="hint">Nothing is sent from here — both buttons open a draft you send
+        yourself. Anything that looks like an access token is removed first.</p>
+
+      <details class="report-preview">
+        <summary>See exactly what will be included</summary>
+        <pre id="report-preview"></pre>
+      </details>
+
+      <div class="result-actions" style="justify-content:flex-start;margin-top:14px">
+        <a class="btn btn-primary" id="report-github" target="_blank" rel="noopener">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-github"/></svg>
+          Open a GitHub issue</a>
+        <a class="btn btn-ghost" id="report-email">
+          <svg class="ic" aria-hidden="true"><use href="assets/icons.svg#i-envelope-fill"/></svg>
+          Send by email</a>
+        <button class="btn btn-ghost" id="report-copy">Copy</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ install ═══════════════════════════════════════════════════════════ -->
+<div class="scrim" id="modal-install" hidden>
+  <div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="install-title">
+    <div class="modal-head">
+      <h5 id="install-title">Install this app</h5>
+      <button class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body prose" style="color:var(--ink-2)">
+      <p>Chrome or Edge on desktop: click the install icon at the right of the address bar,
+        or open the browser menu and choose “Install Hub uploader”.</p>
+      <p>Safari on iPadOS/macOS: use Share → Add to Dock. Once installed, this app opens in
+        its own window with no browser chrome, and works offline until you upload.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ github import ═════════════════════════════════════════════════════ -->
+<div class="scrim" id="modal-github" hidden>
+  <div class="modal md" role="dialog" aria-modal="true" aria-labelledby="github-title">
+    <div class="modal-head">
+      <h5 id="github-title">Import from GitHub</h5>
+      <button class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="hint">Public repository, e.g. <code>owner/repo</code>. The first 25 files under
+        5 MB are staged, preserving folder structure.</p>
+      <input class="fld" id="f-github" type="text" placeholder="owner/repo" style="margin-bottom:10px">
+      <p class="err" id="github-error" hidden></p>
+      <button class="btn btn-primary btn-block" id="import-btn">Import</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
