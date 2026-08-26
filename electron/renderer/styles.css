@@ -551,6 +551,23 @@ select.fld { appearance: none; cursor: pointer; }
 .set-inline { display: flex; gap: 0.5rem; align-items: center; }
 .set-inline .fld { flex: 1; }
 
+/* AI "explain this error" panel */
+.ai-explain {
+  margin-top: 1rem; text-align: left;
+  background: rgba(2, 6, 23, 0.5); border: 1px solid var(--border-soft);
+  border-radius: 0.5rem; padding: 0.8rem 1rem;
+  max-height: 340px; overflow-y: auto;
+  font-size: 0.82rem; color: var(--fg-2); line-height: 1.55;
+}
+.ai-explain .ex-h { font-weight: 700; color: var(--fg-1); margin: 0.7rem 0 0.2rem; }
+.ai-explain .ex-h:first-child { margin-top: 0; }
+.ai-explain .ex-li { margin: 0.15rem 0 0.15rem 0.4rem; }
+.ai-explain .ex-p { margin: 0.35rem 0; }
+.ai-explain code {
+  font-family: ui-monospace, monospace; font-size: 0.78rem;
+  background: rgba(148, 163, 184, 0.16); padding: 0.05rem 0.3rem; border-radius: 0.25rem;
+}
+
 /* ownership badges (rounded rectangles, not pills) */
 .tag-badge {
   font-size: 0.62rem; font-weight: 600; letter-spacing: 0.02em;

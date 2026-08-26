@@ -164,6 +164,7 @@ async function loadIdentity() {
       identityData = await jget("/api/identity");
       populateSelect($("license"), identityData.licenses, state.license);
       populateSelect($("sdk"), identityData.sdks, state.sdk);
+      $("error-explain").classList.toggle("hidden", !identityData.ai_available);
       return;
     } catch (_) {
       await new Promise((r) => setTimeout(r, 300));
@@ -605,7 +606,56 @@ $("done-again").onclick = () => {
   state.files = []; state.closedFolders = {};
   hideOverlays(); render();
 };
-$("error-back").onclick = hideOverlays;
+$("error-back").onclick = () => {
+  $("error-explanation").classList.add("hidden");
+  $("error-explanation").innerHTML = "";
+  hideOverlays();
+};
+
+// ─────────────── AI: explain an upload error ───────────────
+function renderExplanation(md) {
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const inline = (s) => esc(s)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  return (md || "").split("\n").map((line) => {
+    const t = line.trim();
+    if (!t) return "";
+    if (/^#{1,6}\s/.test(t)) return `<div class="ex-h">${inline(t.replace(/^#{1,6}\s/, ""))}</div>`;
+    if (/^[-*]\s/.test(t)) return `<div class="ex-li">• ${inline(t.replace(/^[-*]\s/, ""))}</div>`;
+    if (/^\d+\.\s/.test(t)) return `<div class="ex-li">${inline(t)}</div>`;
+    return `<div class="ex-p">${inline(t)}</div>`;
+  }).join("");
+}
+
+const errExplainBtn = $("error-explain");
+if (errExplainBtn) errExplainBtn.onclick = async () => {
+  const box = $("error-explanation");
+  const err = ($("error-msg").textContent || "").trim();
+  if (!err) return;
+  errExplainBtn.disabled = true;
+  errExplainBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Analyzing…';
+  box.classList.remove("hidden");
+  box.innerHTML = '<div class="ex-p muted-cap">Asking Claude to explain…</div>';
+  try {
+    const ctx = {
+      repo_type: state.repoType,
+      mode: state.mode,
+      repo: state.mode === "Create new" ? state.repoName : state.existingRepo,
+      visibility: state.visibility,
+      files: state.files.length,
+    };
+    const r = await jpost("/api/explain", { error: err, context: ctx });
+    box.innerHTML = r.ok
+      ? renderExplanation(r.explanation)
+      : `<div class="ex-p muted-cap">${r.error || "Could not get an explanation."}</div>`;
+  } catch (_) {
+    box.innerHTML = '<div class="ex-p muted-cap">Could not reach the AI helper.</div>';
+  } finally {
+    errExplainBtn.disabled = false;
+    errExplainBtn.innerHTML = '<i class="bi bi-stars"></i> Explain this error';
+  }
+};
 
 function showOverlay(id) {
   hideOverlays();

@@ -217,6 +217,11 @@ class UploadReq(BaseModel):
     files: list[StagedFile] = []
 
 
+class ExplainReq(BaseModel):
+    error: str
+    context: dict = {}
+
+
 # ────────────────────────────── routes ──────────────────────────────
 @app.get("/api/health")
 def health():
@@ -227,7 +232,8 @@ def health():
 def identity():
     name, ok = token_identity()
     return {"name": name, "org": ORG, "token_ok": ok,
-            "licenses": LICENSES, "sdks": SDKS}
+            "licenses": LICENSES, "sdks": SDKS,
+            "ai_available": bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())}
 
 
 @app.get("/api/repos")
@@ -356,6 +362,56 @@ def deployments(limit: int = 50):
         return {"deployments": recs}
     except Exception:
         return {"deployments": []}
+
+
+EXPLAIN_SYSTEM = (
+    "You are a debugging assistant embedded in the IWMI Hub Uploader — a desktop and web app "
+    "(Electron front-end + FastAPI backend using huggingface_hub) that uploads models, datasets "
+    "and Spaces to the IWMIHQ organization on the Hugging Face Hub.\n\n"
+    "A user hit an error and asked you to explain it. Given the error message and context, reply with:\n"
+    "1. A one-sentence, plain-language summary of what went wrong.\n"
+    "2. The most likely cause.\n"
+    "3. Concrete steps to fix it, specific to this app where possible. Useful facts: repository names "
+    "must match letters/numbers/._- and start alphanumeric; uploads use a shared team token (HF_TOKEN) "
+    "that needs write access to IWMIHQ; files over 10 MB upload via git LFS automatically; a user can only "
+    "edit projects they own or that are unclaimed.\n\n"
+    "Keep it short, friendly and non-technical. Use brief markdown (short headings or bullets). "
+    "Do not invent details the error does not support."
+)
+
+
+@app.post("/api/explain")
+def explain(req: ExplainReq):
+    """AI helper: explain an upload/deployment error and suggest a fix, via Claude."""
+    if not os.environ.get("ANTHROPIC_API_KEY", "").strip():
+        return {"ok": False, "error": "AI help isn't configured on this server (set ANTHROPIC_API_KEY)."}
+    if not (req.error or "").strip():
+        return {"ok": False, "error": "No error message to explain."}
+    try:
+        import anthropic
+    except ImportError:
+        return {"ok": False, "error": "The AI helper dependency (anthropic) isn't installed in this build."}
+    try:
+        client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from the environment
+        ctx = "\n".join(f"- {k}: {v}" for k, v in (req.context or {}).items()
+                        if v not in (None, "", [], 0))
+        user = ("An upload to the Hugging Face Hub failed in the IWMI Hub Uploader.\n\n"
+                f"Error message:\n{req.error.strip()}\n"
+                + (f"\nContext:\n{ctx}\n" if ctx else ""))
+        msg = client.messages.create(
+            model="claude-opus-4-8",
+            max_tokens=2000,
+            thinking={"type": "adaptive"},
+            output_config={"effort": "low"},
+            system=EXPLAIN_SYSTEM,
+            messages=[{"role": "user", "content": user}],
+        )
+        text = "".join(b.text for b in msg.content if b.type == "text").strip()
+        return {"ok": True, "explanation": text or "No explanation was returned."}
+    except anthropic.APIStatusError as exc:
+        return {"ok": False, "error": f"AI service error ({exc.status_code})."}
+    except Exception as exc:
+        return {"ok": False, "error": f"Could not get an explanation: {exc}"}
 
 
 def _run_upload(job_id: str, req: UploadReq):

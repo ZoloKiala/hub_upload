@@ -110,6 +110,7 @@ py -3 -m PyInstaller --noconfirm --onefile --name hub-backend \
   --collect-all uvicorn --collect-all fastapi --collect-all starlette \
   --collect-all anyio --collect-all huggingface_hub --collect-all pydantic \
   --collect-all pydantic_core --collect-all multipart --collect-all dotenv \
+  --collect-all anthropic \
   backend.py
 # 2. build the installer (electron-builder), output in dist-app/
 cd electron
@@ -165,6 +166,7 @@ set service **Variables**:
 |---|---|
 | `HF_TOKEN` | team write token — **required** for uploads |
 | `ACCESS_CODE` | if set, the whole app sits behind an HTTP Basic prompt (password = this code). **Strongly recommended for any public URL**, because uploads use the shared token and there is no passphrase. |
+| `ANTHROPIC_API_KEY` | optional; enables the in-app **"Explain this error"** AI helper (Claude). Without it the button is hidden. |
 | `HF_ORG` | optional; defaults to `IWMIHQ` |
 
 Then **Settings → Networking → Generate Domain**. Nixpacks installs
