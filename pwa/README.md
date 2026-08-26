@@ -111,8 +111,12 @@ a mistake.
 - **If you are not listed**, the pre-flight check fails and the upload button stays
   disabled until you type the repository's name — the same friction the data cube
   uses for removals. Going ahead is then deliberate, and the commit says who did it.
-- **The picker offers what you have uploaded to** first, marked "— yours", with a
-  checkbox to show everything.
+- **The picker shows every repository**, in two groups: what this device has uploaded
+  to first, then the rest of the organization. It used to *filter* to the first group
+  by default, which on a machine with one upload hid the other twenty-odd. Local
+  history is a useful shortcut and a bad definition of "mine" — it is empty on a new
+  machine — so it orders the list rather than trimming it. The placeholder carries the
+  count, and `LIST_CAP` (200) logs a warning if it ever truncates.
 
 If this has to be *enforced* rather than made hard to do by accident, the options are
 Hugging Face **resource groups** (Enterprise Hub — `createRepo` already accepts a

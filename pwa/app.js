@@ -30,6 +30,9 @@ const CONTACT_EMAIL = 'z.kiala@cgiar.org';
 const REPORT_LIMIT = 5500;
 const ORG = 'IWMIHQ';
 const LFS_BYTES = 10 * 1024 * 1024;
+// How far the repository picker reads. High enough that IWMIHQ fits several times
+// over; a cap at all only so a runaway listing cannot hang the menu.
+const LIST_CAP = 200;
 const KEY = { token: 'hu_token', name: 'hu_name', history: 'hu_history',
               theme: 'hu_theme' };
 
@@ -330,39 +333,44 @@ async function loadExisting() {
     const list = state.repoType === 'model' ? h.listModels
                : state.repoType === 'dataset' ? h.listDatasets : h.listSpaces;
     const found = [];
+    let truncated = false;
     for await (const repo of list({ search: { owner: ORG }, accessToken: state.token })) {
       // `name` is the "IWMIHQ/thing" path; `id` is an internal hex string. Reading
       // id here filled this menu with hex and would have committed to a repository
       // that does not exist.
       found.push(repo.name || repo.id);
-      if (found.length >= 60) break;
+      if (found.length >= LIST_CAP) { truncated = true; break; }
     }
     found.sort();
+    if (truncated) {
+      issue('warn', 'The repository list stopped at ' + LIST_CAP + ' ' +
+                    state.repoType + 's — if yours is missing, that is why.');
+    }
 
-    // Yours first, and by default only yours: the list is long, and picking the
-    // wrong neighbour out of sixty is the accident this is here to prevent. Which
-    // ones are yours comes from what you have uploaded from this device -- cheap,
-    // and right often enough to be worth it; the note under the picker is what
-    // actually reads the repository.
+    // Two groups rather than a filter. What this device has uploaded to is a useful
+    // shortcut and a bad definition of "mine" -- it is empty on a new machine -- so
+    // it goes first and everything else stays visible under it. The note below the
+    // picker is what actually reads a repository's maintainers.
     const uploaded = {};
     state.history.forEach((h) => { uploaded[h.repo] = true; });
     const mine = found.filter((id) => uploaded[id]);
     const rest = found.filter((id) => !uploaded[id]);
-    const onlyMine = $('f-mine-only') && $('f-mine-only').checked && mine.length > 0;
-    const offered = onlyMine ? mine : mine.concat(rest);
 
-    const option = (id) => '<option value="' + esc(id) + '">' + esc(id) +
-      (uploaded[id] ? ' — yours' : '') + '</option>';
-    select.innerHTML = '<option value="">' +
-      (offered.length ? 'Select a repository…'
-                      : 'No ' + state.repoType + 's found in ' + ORG) +
-      '</option>' + offered.map(option).join('');
-    const toggle = $('f-mine-only');
-    if (toggle) {
-      toggle.parentElement.hidden = mine.length === 0;
-      toggle.parentElement.querySelector('span').textContent =
-        'Only the ' + mine.length + ' I have uploaded to';
+    const option = (id) => '<option value="' + esc(id) + '">' + esc(id) + '</option>';
+    const kind = state.repoType === 'model' ? 'models'
+               : state.repoType === 'dataset' ? 'datasets' : 'Spaces';
+    let html = '<option value="">' +
+      (found.length ? 'Select one of ' + found.length + ' ' + kind + '…'
+                    : 'No ' + kind + ' found in ' + ORG) + '</option>';
+    if (mine.length) {
+      html += '<optgroup label="Uploaded from this device">' +
+              mine.map(option).join('') + '</optgroup>' +
+              '<optgroup label="All ' + ORG + ' ' + kind + '">' +
+              rest.map(option).join('') + '</optgroup>';
+    } else {
+      html += found.map(option).join('');
     }
+    select.innerHTML = html;
   } catch (e) {
     select.innerHTML = '<option value="">Could not list repositories</option>';
   }
@@ -1445,7 +1453,7 @@ function wire() {
     .forEach((id) => on($(id), 'input', refresh));
   on($('f-existing'), 'change', inspectTarget);
   on($('f-confirm'), 'input', refresh);
-  on($('f-mine-only'), 'change', () => loadExisting());
+
 
   on($('f-search'), 'input', (e) => {
     state.search = e.target.value;
