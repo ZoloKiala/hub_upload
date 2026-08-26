@@ -23,12 +23,19 @@ const SHELL = [
   './assets/icon-192.png',
   './assets/icon-512.png',
   './assets/fonts/dmseriftext-latin.woff2',
-  './assets/fonts/sourcesans3-latin.woff2',
+  './assets/fonts/publicsans-latin.woff2',
 ];
 
 self.addEventListener('install', (event) => {
+  // Deliberately not addAll(): it is atomic, so a single stale path rejects the
+  // whole batch and the app silently ends up with no offline shell at all. That
+  // happened once already, when a font was renamed. One request each instead.
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(SHELL)).catch(() => {})
+    caches.open(CACHE).then((cache) => Promise.all(
+      SHELL.map((url) => cache.add(url).catch((e) => {
+        console.warn('[sw] not cached:', url, e && e.message);
+      }))
+    ))
   );
   self.skipWaiting();
 });

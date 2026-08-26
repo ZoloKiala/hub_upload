@@ -139,6 +139,9 @@ and an upload needs the network regardless.
 - Project search filters the list already in memory (`renderProjects()`), so it costs
   no Hub calls, works offline once loaded, and cannot rate-limit. Every word in the
   query must match, against the repository path, its kind, and public/private.
+- `sw.js` caches the shell one request at a time, not with `addAll()`: that call is
+  atomic, so a single renamed file rejects the batch and leaves the app with no
+  offline shell while looking fine. Keep `SHELL` in step with what is on disk.
 - Hub list entries put the `owner/name` path in **`name`**; `id` is an internal hex
   string, and the modified date is **`updatedAt`** (`lastModified` is only on
   single-repo lookups). Both cost a bug already.
