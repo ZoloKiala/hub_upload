@@ -134,7 +134,7 @@ h3.card-title.sm { font-size: 0.98rem; margin-bottom: 0.6rem; }
   color: var(--ink);
   margin-bottom: 6px;
 }
-.hint { font-size: 0.75rem; color: var(--ink-3); margin: 0 0 6px; line-height: 1.5; }
+.hint { font-size: 0.75rem; color: var(--ink-2); margin: 0 0 6px; line-height: 1.5; }
 .hint.tight { margin: 0 0 14px; font-size: 0.72rem; }
 /* A hint that runs straight into the next field's label reads as part of it. */
 .hint + .lbl { margin-top: 14px; }
@@ -216,10 +216,14 @@ select.fld { padding: 0.45rem 0.5rem; }
 .btn-danger:hover { background: rgba(192, 57, 43, 0.06); }
 .btn-block { width: 100%; }
 .btn:disabled { cursor: not-allowed; opacity: 1; }
+/* A disabled button still has to be readable: it is telling you what you cannot do
+   yet, and the hint beside it says why. The design's 8%-navy chip with #9AA5B1 text
+   measured 3.4:1 on white and 1.1:1 on the dark ground -- invisible. These tokens
+   flip with the theme and clear AA in both. */
 .btn-primary:disabled {
-  background: rgba(40, 83, 125, 0.08);
-  border-color: rgba(40, 83, 125, 0.12);
-  color: var(--ink-3);
+  background: var(--blue-soft);
+  border-color: var(--line-strong);
+  color: var(--ink-2);
   box-shadow: none;
 }
 .btn-link {
@@ -499,6 +503,44 @@ select.fld { padding: 0.45rem 0.5rem; }
 @media (max-width: 700px) { .pair { grid-template-columns: 1fr; } }
 .empty { font-size: 0.8rem; color: var(--ink-2); font-style: italic; padding: 0.5rem 0; }
 
+/* The maintainer note under the existing-repository picker. Neutral when the
+   repository is yours, amber when it is not — the colour the checks already use for
+   "look at this before you commit". */
+.owner-note {
+  margin: 8px 0 0.9rem;
+  padding: 9px 11px;
+  border-radius: var(--r-field);
+  font-size: 0.76rem;
+  line-height: 1.5;
+  background: var(--surface-wash);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+.owner-note strong { color: var(--ink); }
+.owner-note.theirs {
+  background: rgba(221, 145, 3, 0.08);
+  border-color: rgba(221, 145, 3, 0.35);
+  color: var(--warn-ink);
+}
+.owner-note.theirs strong { color: var(--warn-ink); }
+.owner-note.blocked {
+  background: rgba(192, 57, 43, 0.07);
+  border-color: rgba(192, 57, 43, 0.3);
+  color: var(--bad);
+}
+.owner-note.blocked strong { color: var(--bad); }
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 0.76rem;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.check-row input { accent-color: var(--navy); }
+
 /* ── dropzone ────────────────────────────────────────────────────────────── */
 .drop {
   background: var(--surface);
@@ -525,7 +567,7 @@ select.fld { padding: 0.45rem 0.5rem; }
   align-items: center;
   gap: 10px;
   margin-top: 14px;
-  color: var(--ink-3);
+  color: var(--ink-2);
   font-size: 0.72rem;
 }
 .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
@@ -983,12 +1025,15 @@ select.fld { padding: 0.45rem 0.5rem; }
 
 /* The primary button is navy-on-white in the light look; in the dark one navy is
    a pale blue, so its text has to become the dark ground. */
-:root[data-theme="dark"] .btn-primary,
+/* :not(:disabled) matters more than it looks: without it this rule outranks
+   .btn-primary:disabled and paints the dark ground onto a dark chip -- 1.2:1, which
+   is how the disabled upload button became invisible. */
+:root[data-theme="dark"] .btn-primary:not(:disabled),
 :root[data-theme="dark"] .seg button[aria-pressed="true"],
 :root[data-theme="dark"] .theme-toggle button[aria-pressed="true"],
 :root[data-theme="dark"] .tabs button[aria-selected="true"] { color: #0f1620; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .btn-primary,
+  :root:not([data-theme="light"]) .btn-primary:not(:disabled),
   :root:not([data-theme="light"]) .seg button[aria-pressed="true"],
   :root:not([data-theme="light"]) .theme-toggle button[aria-pressed="true"],
   :root:not([data-theme="light"]) .tabs button[aria-selected="true"] { color: #0f1620; }

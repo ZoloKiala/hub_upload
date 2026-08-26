@@ -65,6 +65,32 @@ the one in the bar.
 Below 900px the two-column upload view stacks; below 620px *tall* the file, README
 and log panels give up their fixed heights so a short window scrolls as one page.
 
+## Whose repository is it
+
+The Hub has no per-repository owner inside an organization: everything in IWMIHQ
+belongs to IWMIHQ, and org write access reaches all of it. **This app cannot enforce
+ownership** — the same token works from the CLI. What it does is make ownership
+visible before an upload and put friction in front of the case that is almost always
+a mistake.
+
+- **Maintainers live in the repository**, as a `maintainers:` list in the README
+  front matter this app writes. Creating lists you; adding to someone else's keeps
+  their names and appends yours — uploading never takes a repository over.
+- **Choosing an existing repository reads it first**: who maintains it, and whether
+  your token can write to it at all (`checkRepoAccess`), so a 403 arrives at the
+  picker rather than after a long upload.
+- **If you are not listed**, the pre-flight check fails and the upload button stays
+  disabled until you type the repository's name — the same friction the data cube
+  uses for removals. Going ahead is then deliberate, and the commit says who did it.
+- **The picker offers what you have uploaded to** first, marked "— yours", with a
+  checkbox to show everything.
+
+If this has to be *enforced* rather than made hard to do by accident, the options are
+Hugging Face **resource groups** (Enterprise Hub — `createRepo` already accepts a
+`resourceGroupId`), per-person **fine-grained tokens** scoped to their own
+repositories, or a review gate holding the only write token, as the data cube does
+for product changes.
+
 ## Run it
 
 Any static server; a service worker will not install over `file://`.

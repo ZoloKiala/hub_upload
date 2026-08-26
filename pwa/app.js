@@ -39,6 +39,7 @@ const state = {
   tags: [],
   history: [],
   projects: [],
+  target: null,
   search: '',
   logLines: [],
   installEvent: null,
@@ -267,6 +268,9 @@ function closeModals() {
 /* ── destination ────────────────────────────────────────────────────────── */
 function setRepoType(type) {
   state.repoType = type;
+  state.target = null;
+  show($('owner-note'), false);
+  show($('confirm-row'), false);
   document.querySelectorAll('#repo-type button').forEach((b) => {
     b.setAttribute('aria-pressed', String(b.dataset.type === type));
   });
@@ -277,6 +281,9 @@ function setRepoType(type) {
 
 function setRepoMode(mode) {
   state.repoMode = mode;
+  state.target = null;
+  show($('owner-note'), false);
+  show($('confirm-row'), false);
   document.querySelectorAll('#repo-mode button').forEach((b) => {
     b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
   });
@@ -320,11 +327,142 @@ async function loadExisting() {
       if (found.length >= 60) break;
     }
     found.sort();
+
+    // Yours first, and by default only yours: the list is long, and picking the
+    // wrong neighbour out of sixty is the accident this is here to prevent. Which
+    // ones are yours comes from what you have uploaded from this device -- cheap,
+    // and right often enough to be worth it; the note under the picker is what
+    // actually reads the repository.
+    const uploaded = {};
+    state.history.forEach((h) => { uploaded[h.repo] = true; });
+    const mine = found.filter((id) => uploaded[id]);
+    const rest = found.filter((id) => !uploaded[id]);
+    const onlyMine = $('f-mine-only') && $('f-mine-only').checked && mine.length > 0;
+    const offered = onlyMine ? mine : mine.concat(rest);
+
+    const option = (id) => '<option value="' + esc(id) + '">' + esc(id) +
+      (uploaded[id] ? ' — yours' : '') + '</option>';
     select.innerHTML = '<option value="">' +
-      (found.length ? 'Select a repository…' : 'No ' + state.repoType + 's found in ' + ORG) +
-      '</option>' + found.map((id) => '<option value="' + esc(id) + '">' + esc(id) + '</option>').join('');
+      (offered.length ? 'Select a repository…'
+                      : 'No ' + state.repoType + 's found in ' + ORG) +
+      '</option>' + offered.map(option).join('');
+    const toggle = $('f-mine-only');
+    if (toggle) {
+      toggle.parentElement.hidden = mine.length === 0;
+      toggle.parentElement.querySelector('span').textContent =
+        'Only the ' + mine.length + ' I have uploaded to';
+    }
   } catch (e) {
     select.innerHTML = '<option value="">Could not list repositories</option>';
+  }
+  refresh();
+}
+
+/* ── who maintains what ─────────────────────────────────────────────────────
+ * The Hub has no per-repository owner inside an organization: everything in IWMIHQ
+ * belongs to IWMIHQ, and org write access reaches all of it. So ownership is a
+ * convention kept where everyone can see it — a `maintainers:` list in the README
+ * front matter this app already writes.
+ *
+ * None of this prevents anything. It makes the common accident — uploading into a
+ * name that looked free, or someone else's work in flight — visible before it
+ * happens, and asks you to type the name if you go ahead anyway.
+ */
+function myHandles() {
+  const who = state.whoami || {};
+  return [who.name, who.fullname, state.name]
+    .filter(Boolean).map((s) => String(s).trim().toLowerCase());
+}
+
+function readsAsMine(maintainers) {
+  if (!maintainers.length) return true;          // nobody claimed it
+  const mine = myHandles();
+  return maintainers.some((m) => mine.indexOf(String(m).trim().toLowerCase()) !== -1);
+}
+
+/** Pull `maintainers:` out of a README's YAML front matter. Deliberately small: a
+ *  block list or an inline one, and nothing else — this is a convention, not a
+ *  schema, and a README that does not follow it simply has no maintainers. */
+function parseMaintainers(readmeText) {
+  const front = /^---\s*\n([\s\S]*?)\n---/.exec(readmeText || '');
+  if (!front) return [];
+  const body = front[1];
+  const inline = /^maintainers:\s*\[([^\]]*)\]\s*$/m.exec(body);
+  if (inline) {
+    return inline[1].split(',').map((s) => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+  }
+  const block = /^maintainers:\s*\n((?:\s*-\s*.+\n?)+)/m.exec(body);
+  if (!block) return [];
+  return block[1].split('\n')
+    .map((line) => line.replace(/^\s*-\s*/, '').trim().replace(/^["']|["']$/g, ''))
+    .filter(Boolean);
+}
+
+async function inspectTarget() {
+  const note = $('owner-note');
+  const name = val('f-existing').trim();
+  state.target = null;
+  show(note, false);
+  show($('confirm-row'), false);
+  if (!name) { refresh(); return; }
+
+  note.className = 'owner-note';
+  note.innerHTML = 'Checking ' + esc(name) + '…';
+  show(note, true);
+
+  try {
+    const h = await getHub();
+    const repo = { type: state.repoType, name };
+
+    // Access first: better to hear it now than after a long upload.
+    let writable = true;
+    try {
+      const access = await h.checkRepoAccess({ repo, accessToken: state.token });
+      writable = !(access && access.writeAccess === false);
+    } catch (e) {
+      writable = false;
+    }
+    if (!writable) {
+      note.className = 'owner-note blocked';
+      note.innerHTML = '<strong>You cannot write to this repository.</strong> ' +
+        'Your token has no write access to it — ask an admin, or choose another.';
+      state.target = { name: name, writable: false, maintainers: [], mine: false };
+      refresh();
+      return;
+    }
+
+    let maintainers = [];
+    let readme = '';
+    try {
+      readme = await (await h.downloadFile({ repo, path: 'README.md',
+                                             accessToken: state.token })).text();
+      maintainers = parseMaintainers(readme);
+    } catch (e) { /* no README, or not readable: treat as unclaimed */ }
+
+    const mine = readsAsMine(maintainers);
+    state.target = { name: name, writable: true, maintainers: maintainers, mine: mine };
+
+    if (!maintainers.length) {
+      note.className = 'owner-note';
+      note.innerHTML = '<strong>No maintainer is recorded</strong> for this repository. ' +
+        'Uploading adds you to its README, so the next person can see who to ask.';
+    } else if (mine) {
+      note.className = 'owner-note';
+      note.innerHTML = 'Maintained by <strong>' + esc(maintainers.join(', ')) +
+        '</strong> — including you.';
+    } else {
+      note.className = 'owner-note theirs';
+      note.innerHTML = '<strong>This is not your repository.</strong> Maintained by ' +
+        esc(maintainers.join(', ')) + '. You can still add to it — type the name below ' +
+        'to confirm, and your commit will say it was you.';
+      $('confirm-name').textContent = name;
+      $('f-confirm').value = '';
+      show($('confirm-row'), true);
+    }
+  } catch (e) {
+    note.className = 'owner-note';
+    note.innerHTML = 'Could not check this repository. ' +
+      esc((e && e.message) || 'The upload will still say who you are.');
   }
   refresh();
 }
@@ -371,6 +509,22 @@ function checks() {
   const t = target();
   out.push(t ? pass('Repository target set — ' + fullName()) : fail('Choose or name a repository'));
 
+  // Ownership, when updating something that already exists.
+  if (state.repoMode === 'update' && state.target) {
+    const info = state.target;
+    if (!info.writable) {
+      out.push(fail('You cannot write to ' + info.name));
+    } else if (!info.maintainers.length) {
+      out.push(pass('No maintainer recorded — you will be added'));
+    } else if (info.mine) {
+      out.push(pass('You maintain this repository'));
+    } else if (confirmedTarget()) {
+      out.push(warn('Not your repository — confirmed by name'));
+    } else {
+      out.push(fail('Not your repository — type its name to confirm'));
+    }
+  }
+
   const odd = state.files.filter((f) => !/^[\w\-. /]+$/.test(f.path));
   out.push(odd.length ? warn(odd.length + ' file name(s) may need cleanup')
                       : pass('File names are valid'));
@@ -385,6 +539,25 @@ function checks() {
   return out;
 }
 
+/** Typing the repository name is what turns "somebody else's" into a deliberate
+ *  act rather than a mis-click in a list of sixty. */
+/** The list to write: whoever was there, plus you. */
+function maintainerList() {
+  const me = (state.name || (state.whoami && (state.whoami.fullname || state.whoami.name)) || '').trim();
+  const existing = (state.repoMode === 'update' && state.target)
+    ? state.target.maintainers.slice() : [];
+  if (me && !readsAsMine(existing.length ? existing : [])) existing.push(me);
+  else if (me && !existing.length) existing.push(me);
+  return existing;
+}
+
+function confirmedTarget() {
+  const info = state.target;
+  if (!info || info.mine || !info.maintainers.length) return true;
+  const typed = val('f-confirm').trim();
+  return typed === info.name || typed === info.name.split('/').pop();
+}
+
 function readme() {
   const name = state.repoMode === 'create' ? target() : target().split('/').pop();
   let front = '---\n';
@@ -394,6 +567,12 @@ function readme() {
   }
   if (state.tags.length) front += 'tags:\n' + state.tags.map((t) => '  - ' + t).join('\n') + '\n';
   if (state.repoType === 'space') front += 'sdk: ' + val('f-sdk') + '\n';
+  // Who to ask about this repository, kept in the repository itself. Existing
+  // maintainers are never dropped -- adding files does not take a repository over.
+  const maintainers = maintainerList();
+  if (maintainers.length) {
+    front += 'maintainers:\n' + maintainers.map((m) => '  - ' + m).join('\n') + '\n';
+  }
   front += '---\n\n';
 
   let body = '# ' + (name || 'untitled-repository') + '\n\n';
@@ -439,10 +618,15 @@ function refresh() {
   show($('log-card'), state.logLines.length > 0);
   $('log-lines').innerHTML = state.logLines.map((l) => '<div>' + esc(l) + '</div>').join('');
 
-  const ready = has && !!target();
+  const blocked = state.repoMode === 'update' && state.target &&
+                  (state.target.writable === false || !confirmedTarget());
+  const ready = has && !!target() && !blocked;
   $('upload-btn').disabled = !ready;
   $('upload-hint').textContent = !has ? 'Add files to enable upload.'
     : !target() ? 'Choose or name a repository first.'
+    : (state.target && state.target.writable === false)
+      ? 'You cannot write to ' + state.target.name + '.'
+    : blocked ? 'Type the repository name to confirm this is deliberate.'
     : files.length + ' file(s) staged, ready to upload.';
 }
 
@@ -817,7 +1001,9 @@ function wire() {
   // type — but nothing re-renders the field itself, so the caret stays put.
   ['f-repo', 'f-desc', 'f-license', 'f-existing', 'f-sdk', 'f-commit']
     .forEach((id) => on($(id), 'input', refresh));
-  on($('f-existing'), 'change', refresh);
+  on($('f-existing'), 'change', inspectTarget);
+  on($('f-confirm'), 'input', refresh);
+  on($('f-mine-only'), 'change', () => loadExisting());
 
   on($('f-search'), 'input', (e) => {
     state.search = e.target.value;
