@@ -18,6 +18,8 @@ const SHELL = [
   './app.js',
   './manifest.json',
   './assets/icons.svg',
+  './assets/hub-uploader-icon.svg',
+  './assets/favicon-32.png',
   './assets/icon-192.png',
   './assets/icon-512.png',
   './assets/fonts/dmseriftext-latin.woff2',

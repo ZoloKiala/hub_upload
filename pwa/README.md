@@ -10,8 +10,9 @@ pwa/
   app.js       state, Hub calls, staging, checks, README generation
   sw.js        service worker: the shell works offline
   manifest.json
-  assets/      icon sprite, app icons, the two web fonts
-  build_icons.py   rebuilds assets/icons.svg (only when the icon list changes)
+  assets/      the app mark, icon sprite, app icons, the two web fonts
+  build_icons.py       rebuilds assets/icons.svg (when the icon list changes)
+  build_app_icons.py   rebuilds the app icons from assets/hub-uploader-icon.svg
 ```
 
 ## The one thing to understand: the token is each person's own
@@ -147,6 +148,13 @@ and an upload needs the network regardless.
   dependency.
 - Icons come from Bootstrap Icons (MIT) as a subset sprite. Add one to the list in
   `build_icons.py` and re-run it.
+- The app's own mark is `assets/hub-uploader-icon.svg` — the source of truth for the
+  favicon and for the installed-app icons. `build_app_icons.py` rasterises it into
+  192, 512, a maskable 512 and a 32px favicon with headless Chrome; re-run it if the
+  drawing changes. The maskable one drops the rounded tile and paints its colour
+  full-bleed, because the launcher supplies the shape and a tile inside the crop
+  shows up as a stray outline. The wordmark in the bar stays IWMI's: a launcher tile
+  needs a square mark, a header needs the institute's name.
 
 ## What this replaces
 
