@@ -68,7 +68,11 @@
   --space-ink: #b84f22;
 
   --serif: "DM Serif Text", Georgia, "Times New Roman", serif;
-  --sans: "Public Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  /* National is the brand's body face (branding.iwmi.org/our-typography), a
+     commercial licence that cannot ship here: named first for anyone who has it,
+     with Public Sans behind it. */
+  --sans: "National", "National Book", "Public Sans", system-ui, -apple-system,
+          "Segoe UI", Helvetica, Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   --r-card: 12px;
